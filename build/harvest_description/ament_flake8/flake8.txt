@@ -1,0 +1,14 @@
+-- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':
+ - /opt/ros/jazzy/bin/ament_flake8 --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml
+
+
+1 files checked
+No problems found
+
+Checked files:
+
+* ./launch/display.launch.py
+
+
+-- run_test.py: return code 0
+-- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml'

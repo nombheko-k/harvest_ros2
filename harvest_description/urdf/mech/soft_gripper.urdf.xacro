@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+	<xacro:macro name="soft_gripper" params="parent_link">
+		<link name="camera_link">
+			<visual>
+				<geometry>
+					<box size="0.03 0.03 0.02"/>
+				</geometry>
+				<material name="red"/>
+			</visual>
+		</link>
+
+		<joint name="camera_joint" type="fixed">
+			<parent link="${parent_link}"/>
+			<child link="camera_link"/>
+			<origin xyz="0.06 0 0.02" rpy="0 0 0"/>
+		</joint>
+
+		<xacro:macro name="finger" params="index angle">
+			<link name="finger_link_${index}">
+				<visual>
+					<origin xyz="0 0 0.04" rpy="0 0 0"/>
+					<geometry>
+						<box size="0.01 0.015 0.08"/>
+					</geometry>
+					<material name="green"/>
+				</visual>
+			</link>
+
+			<joint name="finger_joint_${index}" type="fixed">
+				<parent link="${parent_link}"/>
+				<child link="finger_link_${index}"/>
+				<origin xyz="${0.03 * cos(angle)} ${0.03 * sin(angle)} 0.02" rpy="0 0.2 ${angle}"/>
+			</joint>
+		</xacro:macro>
+
+		<xacro:finger index="1" angle="0.0"/>
+		<xacro:finger index="2" angle="2.094"/>
+		<xacro:finger index="3" angle="4.188"/>
+	</xacro:macro>
+</robot>

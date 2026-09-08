@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+	<xacro:macro name="harvest_arm" params="parent_link">
+		<link name="shoulder_link">
+			<visual>
+				<origin xyz="0 0 0.2" rpy="0 0 0"/>
+				<geometry>
+					<cylinder radius="0.05" length="0.4"/>
+				</geometry>
+				<material name="silver"/>
+			</visual>
+		</link>
+
+		<joint name="base_joint" type="revolute">
+			<parent link="${parent_link}"/>
+			<child link="shoulder_link"/>
+			<axis xyz="0 0 1"/>
+			<limit lower="-3.14" upper="3.14" effort="100.0" velocity="1.0"/>
+			<origin xyz="0 0 0.05" rpy="0 0 0"/>
+		</joint>
+
+		<link name="elbow_link">
+			<visual>
+				<origin xyz="0 0 0.2" rpy="0 0 0"/>
+				<geometry>
+					<cylinder radius="0.04" length="0.4"/>
+				</geometry>
+				<material name="silver"/>
+			</visual>
+		</link>
+
+		<joint name="shoulder_joint" type="revolute">
+			<parent link="shoulder_link"/>
+			<child link="elbow_link"/>
+			<axis xyz="0 1 0"/>
+			<limit lower="-1.57" upper="1.57" effort="100.0" velocity="1.0"/>
+			<origin xyz="0 0 0.4" rpy="0 0 0"/>
+		</joint>
+
+		<link name="wrist_pitch_link">
+			<visual>
+				<geometry>
+					<cylinder radius="0.03" length="0.06"/>
+				</geometry>
+				<material name="blue"/>
+			</visual>
+		</link>
+
+		<joint name="elbow_joint" type="revolute">
+			<parent link="elbow_link"/>
+			<child link="wrist_pitch_link"/>
+			<axis xyz="0 1 0"/>
+			<limit lower="-2.0" upper="2.0" effort="100.0" velocity="1.0"/>
+			<origin xyz="0 0 0.4" rpy="0 0 0"/>
+		</joint>
+
+		<link name="wrist_roll_link">
+			<visual>
+				<geometry>
+					<cylinder radius="0.03" length="0.04"/>
+				</geometry>
+				<material name="green"/>
+			</visual>
+		</link>
+
+		<joint name="wrist_pitch_joint" type="revolute">
+			<parent link="wrist_pitch_link"/>
+			<child link="wrist_roll_link"/>
+			<axis xyz="0 1 0"/>
+			<limit lower="-1.57" upper="1.57" effort="50.0" velocity="1.5"/>
+			<origin xyz="0 0 0.05" rpy="0 0 0"/>
+		</joint>
+
+		<link name="end_effector_tool_mount">
+			<visual>
+				<geometry>
+					<cylinder radius="0.05" length="0.02"/>
+				</geometry>
+				<material name="blue"/>
+			</visual>
+		</link>
+
+		<joint name="wrist_roll_joint" type="revolute">
+			<parent link="wrist_roll_link"/>
+			<child link="end_effector_tool_mount"/>
+			<axis xyz="0 0 1"/>
+			<limit lower="-3.14" upper="3.14" effort="50.0" velocity="1.5"/>
+			<origin xyz="0 0 0.04" rpy="0 0 0"/>
+		</joint>
+	</xacro:macro>
+</robot>

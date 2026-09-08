@@ -1,0 +1,9 @@
+-- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':
+ - /opt/ros/jazzy/bin/ament_lint_cmake --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml
+
+
+No problems found
+
+
+-- run_test.py: return code 0
+-- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml'

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite
+  name="harvest_description.pep257"
+  tests="1"
+  errors="0"
+  failures="0"
+  time="0.025"
+>
+  <testcase
+    name="./launch/display.launch.py"
+    classname="harvest_description.pep257"/>
+  <system-out>Checked files:
+* ./launch/display.launch.py</system-out>
+</testsuite>
