@@ -1,91 +1,146 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
 	<xacro:macro name="harvest_arm" params="parent_link">
-		<link name="shoulder_link">
+		  <!-- ARM STRUCTURE -->
+		<!-- The arm is attached to the rail carriage through base_link. -->
+		<link name="base_link">
 			<visual>
-				<origin xyz="0 0 0.2" rpy="0 0 0"/>
-				<geometry>
-					<cylinder radius="0.05" length="0.4"/>
-				</geometry>
-				<material name="silver"/>
-			</visual>
+			<geometry><cylinder radius="0.1" length="0.1"/></geometry>
+			<material name="blue"/>
+			</visual> 
+			<collision>
+			<geometry><cylinder radius="0.1" length="0.1"/></geometry>
+			</collision>
+			<!-- Solid motor base carriage housing (5 kg) -->
+			<xacro:cylinder_inertial mass="5.0" radius="0.1" length="0.1">
+			<origin xyz="0 0 0" rpy="0 0 0"/>
+			</xacro:cylinder_inertial>
 		</link>
 
+		<!-- 2. Base Revolute Joint (Yaw) -->
 		<joint name="base_joint" type="revolute">
-			<parent link="${parent_link}"/>
+			<parent link="base_link"/>
 			<child link="shoulder_link"/>
 			<axis xyz="0 0 1"/>
-			<limit lower="-3.14" upper="3.14" effort="100.0" velocity="1.0"/>
+			<limit lower="-3.14" upper="3.14" effort="150.0" velocity="1.0"/>
 			<origin xyz="0 0 0.05" rpy="0 0 0"/>
+			<dynamics damping="5.0" friction="2.0"/>
 		</joint>
 
-		<link name="elbow_link">
+		<link name="shoulder_link">
 			<visual>
-				<origin xyz="0 0 0.2" rpy="0 0 0"/>
-				<geometry>
-					<cylinder radius="0.04" length="0.4"/>
-				</geometry>
-				<material name="silver"/>
+			<origin xyz="0 0 0.2" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.05" length="0.4"/></geometry>
+			<material name="silver"/>
 			</visual>
+			<collision>
+			<origin xyz="0 0 0.2" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.05" length="0.4"/></geometry>
+			</collision>
+			<!-- Carbon fiber/aluminum lightweight link (2.5 kg) -->
+			<xacro:cylinder_inertial mass="2.5" radius="0.05" length="0.4">
+			<origin xyz="0 0 0.2" rpy="0 0 0"/>
+			</xacro:cylinder_inertial>
 		</link>
 
+		<!-- 3. Shoulder Revolute Joint (Pitch) -->
 		<joint name="shoulder_joint" type="revolute">
 			<parent link="shoulder_link"/>
 			<child link="elbow_link"/>
 			<axis xyz="0 1 0"/>
-			<limit lower="-1.57" upper="1.57" effort="100.0" velocity="1.0"/>
+			<limit lower="-1.57" upper="1.57" effort="150.0" velocity="1.0"/>
 			<origin xyz="0 0 0.4" rpy="0 0 0"/>
+			<dynamics damping="5.0" friction="2.0"/>
 		</joint>
 
-		<link name="wrist_pitch_link">
+		<link name="elbow_link">
 			<visual>
-				<geometry>
-					<cylinder radius="0.03" length="0.06"/>
-				</geometry>
-				<material name="blue"/>
+			<origin xyz="0 0 0.2" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.04" length="0.4"/></geometry>
+			<material name="silver"/>
 			</visual>
+			<collision>
+			<origin xyz="0 0 0.2" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.04" length="0.4"/></geometry>
+			</collision>
+			<!-- Upper arm link (2.0 kg) -->
+			<xacro:cylinder_inertial mass="2.0" radius="0.04" length="0.4">
+			<origin xyz="0 0 0.2" rpy="0 0 0"/>
+			</xacro:cylinder_inertial>
 		</link>
 
+		<!-- 4. Elbow Revolute Joint (Pitch) -->
 		<joint name="elbow_joint" type="revolute">
 			<parent link="elbow_link"/>
-			<child link="wrist_pitch_link"/>
+			<child xacro:name="wrist_pitch_link" link="wrist_pitch_link"/>
 			<axis xyz="0 1 0"/>
 			<limit lower="-2.0" upper="2.0" effort="100.0" velocity="1.0"/>
 			<origin xyz="0 0 0.4" rpy="0 0 0"/>
+			<dynamics damping="3.0" friction="1.0"/>
 		</joint>
 
-		<link name="wrist_roll_link">
+		<!-- ================= Universal Wrist (Pitch-Roll) ================= -->
+		<link name="wrist_pitch_link">
 			<visual>
-				<geometry>
-					<cylinder radius="0.03" length="0.04"/>
-				</geometry>
-				<material name="green"/>
+			<geometry><cylinder radius="0.03" length="0.06"/></geometry>
+			<material name="blue"/>
 			</visual>
+			<collision>
+			<geometry><cylinder radius="0.03" length="0.06"/></geometry>
+			</collision>
+			<!-- Small pitch motor housing (0.8 kg) -->
+			<xacro:cylinder_inertial mass="0.8" radius="0.03" length="0.06">
+			<origin xyz="0 0 0" rpy="0 0 0"/>
+			</xacro:cylinder_inertial>
 		</link>
 
+		<!-- 5. Wrist Joint 1 (Pitch) -->
 		<joint name="wrist_pitch_joint" type="revolute">
 			<parent link="wrist_pitch_link"/>
 			<child link="wrist_roll_link"/>
 			<axis xyz="0 1 0"/>
-			<limit lower="-1.57" upper="1.57" effort="50.0" velocity="1.5"/>
+			<limit lower="-1.57" upper="1.57" effort="40.0" velocity="1.5"/>
 			<origin xyz="0 0 0.05" rpy="0 0 0"/>
+			<dynamics damping="1.0" friction="0.5"/>
 		</joint>
 
-		<link name="end_effector_tool_mount">
+		<link name="wrist_roll_link">
 			<visual>
-				<geometry>
-					<cylinder radius="0.05" length="0.02"/>
-				</geometry>
-				<material name="blue"/>
+			<geometry><cylinder radius="0.03" length="0.04"/></geometry>
+			<material name="green"/>
 			</visual>
+			<collision>
+			<geometry><cylinder radius="0.03" length="0.04"/></geometry>
+			</collision>
+			<!-- Small roll motor housing (0.5 kg) -->
+			<xacro:cylinder_inertial mass="0.5" radius="0.03" length="0.04">
+			<origin xyz="0 0 0" rpy="0 0 0"/>
+			</xacro:cylinder_inertial>
 		</link>
 
+		<!-- 6. Wrist Joint 2 (Roll) -->
 		<joint name="wrist_roll_joint" type="revolute">
 			<parent link="wrist_roll_link"/>
 			<child link="end_effector_tool_mount"/>
 			<axis xyz="0 0 1"/>
-			<limit lower="-3.14" upper="3.14" effort="50.0" velocity="1.5"/>
+			<limit lower="-3.14" upper="3.14" effort="40.0" velocity="1.5"/>
 			<origin xyz="0 0 0.04" rpy="0 0 0"/>
+			<dynamics damping="1.0" friction="0.5"/>
 		</joint>
+
+		<link name="end_effector_tool_mount">
+			<visual>
+			<geometry><cylinder radius="0.05" length="0.02"/></geometry>
+			<material name="blue"/>
+			</visual>
+			<collision>
+			<geometry><cylinder radius="0.05" length="0.02"/></geometry>
+			</collision>
+			<!-- Tool mount plate (0.3 kg) -->
+			<xacro:cylinder_inertial mass="0.3" radius="0.05" length="0.02">
+			<origin xyz="0 0 0" rpy="0 0 0"/>
+			</xacro:cylinder_inertial>
+		</link>
 	</xacro:macro>
 </robot>

@@ -8,6 +8,8 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    # Resolve files from the installed package so this launch file also works
+    # when started outside the source workspace.
     pkg_share = get_package_share_directory('harvest_description')
     default_model_path = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_280.urdf.xacro')
     default_rviz_config_path = os.path.join(pkg_share, 'rviz', 'view_robot.rviz')
@@ -21,14 +23,16 @@ def generate_launch_description():
         name='robot_state_publisher',
         output='screen',
         parameters=[{
-            'robot_description': Command(['xacro', ' ', model])
+            # Expand the Xacro at launch time and publish the resulting URDF.
+            'robot_description': Command(['xacro', ' ', model]),
         }]
     )
 
     joint_state_publisher_gui_node = Node(
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
-        name='joint_state_publisher_gui'
+        name='joint_state_publisher_gui',
+        output='screen',
     )
 
     rviz_node = Node(
@@ -52,5 +56,7 @@ def generate_launch_description():
         ),
         robot_state_publisher_node,
         joint_state_publisher_gui_node,
-        rviz_node
+        rviz_node,
     ])
+
+# End of the RViz display launch description.
