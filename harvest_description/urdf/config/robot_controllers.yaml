@@ -23,4 +23,5 @@ arm_controller:
       - position
     state_interfaces:
       - position
+      - velocity
     open_loop_control: true

@@ -1,70 +1,69 @@
 import os
-
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
-from launch.conditions import IfCondition
+from launch.actions import IncludeLaunchDescription, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, LaunchConfiguration
+from launch.substitutions import Command
 from launch_ros.actions import Node
-
+# ADD THIS IMPORT EXPLICITLY FOR JAZZY STRING PARSING
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
-    # Resolve package resources from the install space, not from a hard-coded
-    # source path, so this launch file works after a normal colcon build.
     pkg_share = get_package_share_directory('harvest_description')
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
 
-    default_model_path = os.path.join(
-        pkg_share, 'urdf', 'robots', 'harvest_280.urdf.xacro'
+    xacro_file = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_full.urdf.xacro')
+    
+    # WRAP THE COMMAND STRING SO LAUNCH DOES NOT CONFUSE XML FOR YAML
+    robot_description_content = ParameterValue(
+        Command(['xacro ', xacro_file]), 
+        value_type=str
     )
-    model = LaunchConfiguration('model')
-    use_control = LaunchConfiguration('use_control')
-    # Pass the control switch through to the robot Xacro. Control is opt-in
-    # because the visual Gazebo launch must also work without controllers.
-    robot_description_content = Command([
-        'xacro', ' ', model, ' use_gz_control:=', use_control
-    ])
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        name='robot_state_publisher',
         output='screen',
         parameters=[{
-            # Gazebo publishes the simulation clock on /clock.
             'robot_description': robot_description_content,
-            'use_sim_time': True,
+            'use_sim_time': True
         }]
     )
 
+    # Core Gazebo Sim framework
     gazebo_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
         ),
-        # Start an empty running Gazebo Sim world.
         launch_arguments={'gz_args': '-r empty.sdf'}.items(),
     )
 
+    # Clock bridge to sync physics engine and controller_manager
+    clock_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        output='screen'
+    )
+
+    # Spawn entity node
     spawn_robot = Node(
         package='ros_gz_sim',
         executable='create',
         output='screen',
         arguments=[
-            # Spawn from robot_description after robot_state_publisher starts.
             '-name', 'raspberry_harvester',
             '-topic', 'robot_description',
-            '-x', '0.0', '-y', '0.0', '-z', '0.1',
+            '-x', '0.0', '-y', '0.0', '-z', '0.1'
         ]
     )
 
+    # ros2_control managers activation
     joint_state_broadcaster_spawner = Node(
         package='controller_manager',
         executable='spawner',
         arguments=['joint_state_broadcaster'],
-        # Do not wait for controller_manager during a visual-only launch.
-        condition=IfCondition(use_control),
         output='screen',
     )
 
@@ -72,10 +71,10 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['arm_controller'],
-        condition=IfCondition(use_control),
         output='screen',
     )
 
+    # Delayed event hooks: Sequential startup orchestration
     delay_broadcaster_after_spawn = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=spawn_robot,
@@ -91,19 +90,10 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            name='model',
-            default_value=default_model_path,
-            description='Absolute path to the robot Xacro file',
-        ),
-        DeclareLaunchArgument(
-            name='use_control',
-            default_value='false',
-            description='Enable the Gazebo ros2_control plugin and controllers',
-        ),
         robot_state_publisher_node,
         gazebo_sim,
+        clock_bridge,
         spawn_robot,
         delay_broadcaster_after_spawn,
-        delay_arm_controller_after_broadcaster,
+        delay_arm_controller_after_broadcaster
     ])

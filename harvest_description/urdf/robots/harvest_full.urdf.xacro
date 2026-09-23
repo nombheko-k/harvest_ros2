@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="harvest_280">
+
+  <xacro:include filename="$(find harvest_description)/urdf/mech/rail.urdf.xacro"/>
+  <xacro:include filename="$(find harvest_description)/urdf/mech/harvest_arm.urdf.xacro"/>
+  <xacro:include filename="$(find harvest_description)/urdf/mech/soft_gripper.urdf.xacro"/>
+
+  <!-- Color Materials -->
+  <material name="silver"><color rgba="0.7 0.7 0.7 1.0"/></material>
+  <material name="blue"><color rgba="0.0 0.0 0.8 1.0"/></material>
+  <material name="green"><color rgba="0.0 0.8 0.0 1.0"/></material>
+  <material name="red"><color rgba="0.8 0.0 0.0 1.0"/></material>
+
+  <xacro:rail/>
+  <xacro:harvest_arm/>
+  <xacro:soft_gripper/>
+
+  <!-- GAZEBO SIMULATION SYSTEM PLUGIN -->
+  <!-- Keep the visual simulation independent from ros2_control startup. -->
+  <gazebo>
+    <plugin filename="gz_ros2_control-system"
+        name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <!-- CRITICAL JAZZY COUPLING: Directs Gazebo to pull from the publisher node -->
+      <robot_param>robot_description</robot_param>
+      <robot_param_node>robot_state_publisher</robot_param_node>
+      <parameters>$(find harvest_description)/urdf/config/robot_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+
+  <!-- ROS2_CONTROL HARDWARE INTERFACE DEFINITION -->
+  <ros2_control name="GazeboSimSystem" type="system">
+  <hardware>
+    <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+  </hardware>
+
+  <joint name="rail_joint">
+      <command_interface name="position"><param name="min">-0.9</param><param name="max">0.9</param></command_interface>
+      <state_interface name="position"/><state_interface name="velocity"/>
+  </joint>
+  <joint name="base_joint">
+    <command_interface name="position"><param name="min">-3.14</param><param name="max">3.14</param></command_interface>
+    <state_interface name="position"/><state_interface name="velocity"/>
+  </joint>
+  <joint name="shoulder_joint">
+    <command_interface name="position"><param name="min">-1.57</param><param name="max">1.57</param></command_interface>
+    <state_interface name="position"/><state_interface name="velocity"/>
+  </joint>
+  <joint name="elbow_joint">
+    <command_interface name="position"><param name="min">-2.0</param><param name="max">2.0</param></command_interface>
+    <state_interface name="position"/><state_interface name="velocity"/>
+  </joint>
+  <joint name="wrist_pitch_joint">
+    <command_interface name="position"><param name="min">-1.57</param><param name="max">1.57</param></command_interface>
+    <state_interface name="position"/><state_interface name="velocity"/>
+  </joint>
+  <joint name="wrist_roll_joint">
+    <command_interface name="position"><param name="min">-3.14</param><param name="max">3.14</param></command_interface>
+    <state_interface name="position"/><state_interface name="velocity"/>
+  </joint>
+  </ros2_control>
+
+</robot>

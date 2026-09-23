@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-	<xacro:macro name="soft_gripper" params="parent_link">
-				<!-- CAMERA AND 3 FINGER GRIPPER -->
+
+	<xacro:include filename="$(find harvest_description)/urdf/robot_utils.urdf.xacro"/>
+
+	<xacro:macro name="soft_gripper">
+		<!-- CAMERA AND 3 FINGER GRIPPER -->
 		<!-- The tool mount is the attachment point for the camera and fingers. -->
 		<!-- Eye-in-Hand Camera Mount -->
 		<joint name="camera_joint" type="fixed">

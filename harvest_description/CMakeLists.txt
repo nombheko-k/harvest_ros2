@@ -10,7 +10,7 @@ find_package(ament_cmake REQUIRED)
 
 # Install directories to share space
 install(
-  DIRECTORY launch urdf rviz meshes
+  DIRECTORY launch urdf rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

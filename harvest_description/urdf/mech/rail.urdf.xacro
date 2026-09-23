@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-	<xacro:macro name="rail" params="parent_link">
+	<xacro:include filename="$(find harvest_description)/urdf/robot_utils.urdf.xacro"/>
+
+	<xacro:macro name="rail">
 		<!-- WORLD ANCHOR AND RAIL -->
 		<!-- The rail macro owns the single world link used by the whole robot. -->
 		<link name="world"/>

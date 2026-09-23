@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-	<xacro:macro name="harvest_arm" params="parent_link">
+	<xacro:include filename="$(find harvest_description)/urdf/robot_utils.urdf.xacro"/>
+
+	<xacro:macro name="harvest_arm">
 		  <!-- ARM STRUCTURE -->
 		<!-- The arm is attached to the rail carriage through base_link. -->
 		<link name="base_link">
@@ -73,14 +75,14 @@
 		<!-- 4. Elbow Revolute Joint (Pitch) -->
 		<joint name="elbow_joint" type="revolute">
 			<parent link="elbow_link"/>
-			<child xacro:name="wrist_pitch_link" link="wrist_pitch_link"/>
+			<child link="wrist_pitch_link"/>
 			<axis xyz="0 1 0"/>
 			<limit lower="-2.0" upper="2.0" effort="100.0" velocity="1.0"/>
 			<origin xyz="0 0 0.4" rpy="0 0 0"/>
 			<dynamics damping="3.0" friction="1.0"/>
 		</joint>
 
-		<!-- ================= Universal Wrist (Pitch-Roll) ================= -->
+		<!-- UNIVERSAL WRIST (PITCH-ROLL) -->
 		<link name="wrist_pitch_link">
 			<visual>
 			<geometry><cylinder radius="0.03" length="0.06"/></geometry>

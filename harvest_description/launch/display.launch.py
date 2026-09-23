@@ -1,5 +1,4 @@
 import os
-
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -8,15 +7,17 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # Resolve files from the installed package so this launch file also works
-    # when started outside the source workspace.
+    # Get the package directory
     pkg_share = get_package_share_directory('harvest_description')
-    default_model_path = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_280.urdf.xacro')
+    # Paths to files
+    default_model_path = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_full.urdf.xacro')
     default_rviz_config_path = os.path.join(pkg_share, 'rviz', 'view_robot.rviz')
 
-    model = LaunchConfiguration('model')
-    rviz_config = LaunchConfiguration('rviz_config')
+    # Launch configurations
+    model = LaunchConfiguration('model', default=default_model_path)
+    rviz_config = LaunchConfiguration('rviz_config', default=default_rviz_config_path)
 
+    # Robot State Publisher Node (processes Xacro using Command substitution)
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -28,6 +29,7 @@ def generate_launch_description():
         }]
     )
 
+    # Joint State Publisher GUI Node (provides sliders to move the joints in RViz)
     joint_state_publisher_gui_node = Node(
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
