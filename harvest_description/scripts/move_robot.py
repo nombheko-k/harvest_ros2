@@ -28,7 +28,7 @@ class HarvesterController(Node):
         num_subscribers = self.publisher_.get_subscription_count()
 
         if num_subscribers > 0:
-            self.get_logger().info(f'Gazebo detected! Sending trajecctory goal...')
+            self.get_logger().info(f'Gazebo detected! Sending trajectory goal...')
 
             # Stop the timer so the goal is only sent once
             self.timer.cancel()
@@ -41,9 +41,9 @@ class HarvesterController(Node):
             ]
 
             point = JointTrajectoryPoint()
-            # Test position taregts
-            point.positions = [0.2, 0.5, -0.3, 0.4, 0.2, 1.3]
-            point.time_from_start = Duration(sec=4, nanosec=0) # Take 4 seconds
+            # Test position targets
+            point.positions = [1.0, 0.0, -1.2, 1.0, 0.8, 0.0]
+            point.time_from_start = Duration(sec=6, nanosec=0) # Take 6 seconds
 
             msg.points = [point]
             self.publisher_.publish(msg)
