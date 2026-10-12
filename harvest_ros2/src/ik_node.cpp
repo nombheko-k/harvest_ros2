@@ -78,29 +78,29 @@ private:
     // target's X coordinate when within travel; clamp at the rail endpoints.
     // The remaining target offset is handled by base yaw and the arm links.
     const double rail_position = std::clamp(target_x, railMin, railMax);
-    const double relative_x = target_x - rail_position;
+    const double relative_x = target_x - rail_position; 
 
     // Convert the remaining world X/Y offset into the arm's radial plane:
     // radius is horizontal distance from the base yaw axis, angle is its yaw.
     const double target_radius = std::hypot(relative_x, target_y);
-    const double base_angle = std::atan2(target_y, relative_x);
+    const double base_angle = std::atan2(target_y, relative_x); // this is base angle found in our model
 
     // Back out the final 0.04 m tool-mount offset to find the wrist point the
     // two-link arm must reach. Because the requested tool pitch is horizontal,
     // that offset contributes radially and contributes no vertical distance.
     const double wrist_radius =
-      target_radius - toolOffset * std::sin(desiredToolPitch);
+      target_radius - toolOffset * std::sin(desiredToolPitch); // basically finding the wrist centre like in our model
     const double wrist_z =
       target_z - baseHeight - toolOffset * std::cos(desiredToolPitch);
 
     // Apply the cosine rule to the 0.40 m and 0.45 m links. cos_elbow must be
     // between -1 and 1 for a real arm configuration; tiny round-off outside
     // that range is tolerated and clamped below.
-    const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z;
+    const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z; // horizontal distance from base to wrist centre
     double cos_elbow =
       (reach_squared - upperArmLength * upperArmLength -
       forearmsAndWristOffset * forearmsAndWristOffset) /
-      (2.0 * upperArmLength * forearmsAndWristOffset);
+      (2.0 * upperArmLength * forearmsAndWristOffset); // use law of cosines to find the elbow angle like in model
 
     if (cos_elbow < -1.0 - 1e-9 || cos_elbow > 1.0 + 1e-9) {
       RCLCPP_ERROR(
@@ -151,6 +151,7 @@ private:
       return;
     }
 
+    // The joint angles are now known; send them to the trajectory controller.
     send_trajectory_point(
       rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle);
     RCLCPP_INFO(

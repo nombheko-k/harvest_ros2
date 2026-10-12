@@ -117,6 +117,8 @@ private:
       }
     }
 
+    // The URDF's rail_joint is a linear translation along world X; the other joints are revolute and rotate about 
+    // the local Z axis.
     const double rail_position = joints.at("rail_joint");
     const double base_angle = joints.at("base_joint");
     const double shoulder_angle = joints.at("shoulder_joint");
