@@ -14,18 +14,17 @@ namespace
 {
 constexpr double kPi = 3.14159265358979323846;
 
-// These limits and link distances match the rail and arm URDF. The 0.45 m
-// segment is the 0.40 m elbow-joint offset plus the 0.05 m wrist-pitch offset.
+// These dimensions follow the URDF frames: the carriage sits 25 mm above the
+// rail origin, the base yaw is 108 mm above the carriage, and the arm has
+// three 150 mm links. Shoulder zero points up.
 constexpr double railMin = -0.9; // Rail lower limit is -0.9 m; URDF upper limit is 0.9 m.
 constexpr double railMax = 0.9;
-constexpr double baseHeight = 0.50;
-constexpr double upperArmLength = 0.40;
-constexpr double forearmsAndWristOffset = 0.45;
-constexpr double toolOffset = 0.04;
+constexpr double shoulderPivotHeight = 0.025 + 0.108 + 0.096;
+constexpr double armLinkLength = 0.15;
+constexpr double toolOffset = 0.02;
 
-// The solver aims the tool horizontally and outward from the base in the arm's
-// radial plane. In this URDF, zero combined pitch points straight up.
-constexpr double desiredToolPitch = kPi / 2.0;
+// Keep the tool axis vertical for the neutral, straight-up startup pose.
+constexpr double desiredToolPitch = -kPi / 2.0;
 
 // Keep candidate joint values inside the corresponding URDF position limits.
 bool inside_range(double value, double lower, double upper)
@@ -64,6 +63,8 @@ private:
       return;
     }
 
+    // Receive the target position in world coordinates. The IK equations below
+    // assume the target is reachable; if not, the arm will move to the closest reachable point and log an error.
     const double target_x = msg->pose.position.x;
     const double target_y = msg->pose.position.y;
     const double target_z = msg->pose.position.z;
@@ -77,30 +78,29 @@ private:
     // The rail only translates along world X. Put it directly beneath the
     // target's X coordinate when within travel; clamp at the rail endpoints.
     // The remaining target offset is handled by base yaw and the arm links.
-    const double rail_position = std::clamp(target_x, railMin, railMax);
-    const double relative_x = target_x - rail_position; 
+    const double rail_position = std::clamp(target_x, railMin, railMax); // decouple the rail
+    const double relative_x = target_x - rail_position; // fix the rail position to align with the target X
 
     // Convert the remaining world X/Y offset into the arm's radial plane:
     // radius is horizontal distance from the base yaw axis, angle is its yaw.
     const double target_radius = std::hypot(relative_x, target_y);
     const double base_angle = std::atan2(target_y, relative_x); // this is base angle found in our model
 
-    // Back out the final 0.04 m tool-mount offset to find the wrist point the
-    // two-link arm must reach. Because the requested tool pitch is horizontal,
-    // that offset contributes radially and contributes no vertical distance.
+    // The final 150 mm link plus the 20 mm tool-flange offset have the
+    // requested tool pitch, leaving a two-link problem for shoulder and elbow.
+    constexpr double finalReach = armLinkLength + toolOffset;
     const double wrist_radius =
-      target_radius - toolOffset * std::sin(desiredToolPitch); // basically finding the wrist centre like in our model
+      target_radius - finalReach * std::cos(desiredToolPitch);
     const double wrist_z =
-      target_z - baseHeight - toolOffset * std::cos(desiredToolPitch);
+      target_z - shoulderPivotHeight + finalReach * std::sin(desiredToolPitch);
 
-    // Apply the cosine rule to the 0.40 m and 0.45 m links. cos_elbow must be
+    // Apply the cosine rule to the first two 150 mm links. cos_elbow must be
     // between -1 and 1 for a real arm configuration; tiny round-off outside
     // that range is tolerated and clamped below.
-    const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z; // horizontal distance from base to wrist centre
+    const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z;
     double cos_elbow =
-      (reach_squared - upperArmLength * upperArmLength -
-      forearmsAndWristOffset * forearmsAndWristOffset) /
-      (2.0 * upperArmLength * forearmsAndWristOffset); // use law of cosines to find the elbow angle like in model
+      (reach_squared - 2.0 * armLinkLength * armLinkLength) /
+      (2.0 * armLinkLength * armLinkLength);
 
     if (cos_elbow < -1.0 - 1e-9 || cos_elbow > 1.0 + 1e-9) {
       RCLCPP_ERROR(
@@ -120,17 +120,17 @@ private:
     for (const double elbow_sign : std::array<double, 2>{1.0, -1.0}) {
       const double try_elbow = elbow_sign * std::acos(cos_elbow);
 
-      // Resolve the shoulder angle from the target direction minus the angle
-      // contributed by the forearm link (standard planar two-link IK).
-      const double try_shoulder =
-        std::atan2(wrist_radius, wrist_z) -
+      // The first joint frame is biased upward by 90 degrees. Solve the link
+      // direction in physical pitch space, then convert it to the URDF angle.
+      const double shoulder_pitch =
+        std::atan2(-wrist_z, wrist_radius) -
         std::atan2(
-        forearmsAndWristOffset * std::sin(try_elbow),
-        upperArmLength + forearmsAndWristOffset * std::cos(try_elbow));
-      // The three pitch joints add together in this URDF, so choose wrist
-      // pitch to produce the desired total tool pitch.
+        armLinkLength * std::sin(try_elbow),
+        armLinkLength + armLinkLength * std::cos(try_elbow));
+      const double try_shoulder = shoulder_pitch + kPi / 2.0;
+      // Remove the shoulder frame's zero offset when computing the wrist angle.
       const double try_wrist =
-        desiredToolPitch - try_shoulder - try_elbow;
+        desiredToolPitch + kPi / 2.0 - try_shoulder - try_elbow;
 
       if (inside_range(try_shoulder, -1.57, 1.57) &&  // between -90 and +90 degrees
         inside_range(try_elbow, -2.0, 2.0) && // between -115 and +115 degrees
@@ -179,7 +179,7 @@ private:
     point.positions = {
       rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle, 0.0};
     // The rail spans 1.8 m and is limited to 0.5 m/s, so four seconds is
-    // sufficient for even a full-range traverse (minimum 3.6 seconds).
+    // sufficient for even a full-range traversal (minimum 3.6 seconds).
     point.time_from_start = rclcpp::Duration::from_seconds(4.0);
     trajectory.points.push_back(point);
     trajectory_pub_->publish(trajectory);

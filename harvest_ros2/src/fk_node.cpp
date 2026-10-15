@@ -10,13 +10,13 @@
 
 namespace
 {
-// These distances follow the URDF joint origins: 0.05 m rail height, 0.05 m
-// base-joint height, and 0.40 m to the shoulder pivot; link dimensions below
-// come from the shoulder, elbow, wrist-pitch, and wrist-roll joint offsets.
-constexpr double shoulderPivotHeight = 0.50;
-constexpr double upperArmLength = 0.40;
-constexpr double forearmsAndWristOffset = 0.45;
-constexpr double toolOffset = 0.04;
+constexpr double kPi = 3.14159265358979323846;
+
+// The carriage frame sits at the rail's top face (25 mm); the base yaw is
+// 108 mm above it, and the shoulder pivot is another 96 mm above the yaw.
+constexpr double shoulderPivotHeight = 0.025 + 0.108 + 0.096;
+constexpr double armLinkLength = 0.15;
+constexpr double toolOffset = 0.02;
 
 // Quaternion composition is used to report the tool orientation in world.
 // Multiplication order matters: the right-hand rotation is applied first.
@@ -46,6 +46,15 @@ geometry_msgs::msg::Quaternion rotation_y(double angle)
   // Unit quaternion for a rotation about the local Y axis.
   geometry_msgs::msg::Quaternion result;
   result.y = std::sin(angle / 2.0);
+  result.w = std::cos(angle / 2.0);
+  return result;
+}
+
+geometry_msgs::msg::Quaternion rotation_x(double angle)
+{
+  // The wrist-roll actuator turns about the arm's local longitudinal axis.
+  geometry_msgs::msg::Quaternion result;
+  result.x = std::sin(angle / 2.0);
   result.w = std::cos(angle / 2.0);
   return result;
 }
@@ -117,8 +126,8 @@ private:
       }
     }
 
-    // The URDF's rail_joint is a linear translation along world X; the other joints are revolute and rotate about 
-    // the local Z axis.
+    // Rail travel and the base yaw are world-X and world-Z motions respectively;
+    // the three arm pitches use local Y and wrist roll uses the local X axis.
     const double rail_position = joints.at("rail_joint");
     const double base_angle = joints.at("base_joint");
     const double shoulder_angle = joints.at("shoulder_joint");
@@ -126,23 +135,22 @@ private:
     const double wrist_angle = joints.at("wrist_pitch_joint");
     const double roll_angle = joints.at("wrist_roll_joint");
 
-    // Shoulder, elbow, and wrist pitch all rotate about parallel Y axes. Their
-    // angles therefore add to give the orientation of each successive link.
+    // Each link extends along local +X. The shoulder frame contributes the
+    // initial -90 degree pitch, so zero joint angles yield a vertical arm.
     const double elbow_sum = shoulder_angle + elbow_angle;
     const double tool_pitch = elbow_sum + wrist_angle;
-
-    // Resolve each link's length into radial and vertical components. The
-    // 0.45 m segment combines the URDF's 0.40 m elbow offset and 0.05 m
-    // wrist-pitch offset; the last 0.04 m is along the tool's local +Z.
+    const double shoulder_pitch = shoulder_angle - kPi / 2.0;
+    const double elbow_pitch = elbow_sum - kPi / 2.0;
+    const double wrist_pitch = tool_pitch - kPi / 2.0;
     const double arm_radius =
-      upperArmLength * std::sin(shoulder_angle) +
-      forearmsAndWristOffset * std::sin(elbow_sum) +
-      toolOffset * std::sin(tool_pitch);
+      armLinkLength * std::cos(shoulder_pitch) +
+      armLinkLength * std::cos(elbow_pitch) +
+      (armLinkLength + toolOffset) * std::cos(wrist_pitch);
     const double tool_height =
-      shoulderPivotHeight +
-      upperArmLength * std::cos(shoulder_angle) +
-      forearmsAndWristOffset * std::cos(elbow_sum) +
-      toolOffset * std::cos(tool_pitch);
+      shoulderPivotHeight -
+      armLinkLength * std::sin(shoulder_pitch) -
+      armLinkLength * std::sin(elbow_pitch) -
+      (armLinkLength + toolOffset) * std::sin(wrist_pitch);
 
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = now();
@@ -154,12 +162,11 @@ private:
     pose.pose.position.y = arm_radius * std::sin(base_angle);
     pose.pose.position.z = tool_height;
 
-    // Compose base yaw, total arm pitch, and wrist roll in the URDF joint order.
-    // Roll is about the tool axis, so it changes orientation but not the
-    // tool-mount origin position calculated above.
+    // Compose yaw, the cumulative pitch, and the longitudinal wrist roll in
+    // the same order as the URDF joints.
     const auto base_rotation = rotation_z(base_angle);
-    const auto arm_rotation = rotation_y(tool_pitch);
-    const auto roll_rotation = rotation_z(roll_angle);
+    const auto arm_rotation = rotation_y(wrist_pitch);
+    const auto roll_rotation = rotation_x(roll_angle);
     pose.pose.orientation =
       multiply(multiply(base_rotation, arm_rotation), roll_rotation);
 

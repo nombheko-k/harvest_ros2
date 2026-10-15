@@ -1,7 +1,7 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler
+from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command
@@ -12,6 +12,17 @@ from launch_ros.parameter_descriptions import ParameterValue
 def generate_launch_description():
     pkg_share = get_package_share_directory('harvest_description')
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
+
+    # SDFormat resolves ROS package mesh URIs as model:// package resources.
+    # Add the installed share directory so Gazebo can find this package's meshes.
+    gazebo_resource_path = os.pathsep.join(filter(None, [
+        os.path.dirname(pkg_share),
+        os.environ.get('GZ_SIM_RESOURCE_PATH', ''),
+    ]))
+    set_gazebo_resource_path = SetEnvironmentVariable(
+        name='GZ_SIM_RESOURCE_PATH',
+        value=gazebo_resource_path,
+    )
 
     xacro_file = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_full.urdf.xacro')
     
@@ -53,7 +64,7 @@ def generate_launch_description():
         executable='create',
         output='screen',
         arguments=[
-            '-name', 'raspberry_harvester',
+            '-name', 'berry_harvester',
             '-topic', 'robot_description',
             '-x', '0.0', '-y', '0.0', '-z', '0.1'
         ]
@@ -90,6 +101,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        set_gazebo_resource_path,
         robot_state_publisher_node,
         gazebo_sim,
         clock_bridge,

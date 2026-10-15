@@ -29,12 +29,14 @@
 		</link>
 
 		<!-- 1. Rail Prismatic Joint -->
+		<!-- The carriage frame is on the rail's upper face (half of its 50 mm
+		     thickness), so the carriage housing rests directly on the rail. -->
 		<joint name="rail_joint" type="prismatic">
 			<parent link="rail_link"/>
 			<child link="base_link"/>
 			<axis xyz="1 0 0"/>
 			<limit lower="-0.9" upper="0.9" effort="200.0" velocity="0.5"/>
-			<origin xyz="0 0 0.05" rpy="0 0 0"/>
+			<origin xyz="0 0 0.025" rpy="0 0 0"/>
 			<dynamics damping="10.0" friction="5.0"/>
 		</joint>
 	</xacro:macro>

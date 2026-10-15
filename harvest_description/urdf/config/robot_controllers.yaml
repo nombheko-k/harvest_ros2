@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz
+    update_rate: 100  # Hz - Matches the ESP32's 10ms execution loop timeline
 
     # Broadcasts the current positions of the joints to the network
     joint_state_broadcaster:
@@ -27,11 +27,26 @@ arm_controller:
     open_loop_control: false # Set to false to force Gazebo to use the PID closed-loop tracking feedback
 
     # INJECTING PID GAINS
-    # This instructs the simulator to execute corrections using our design parameters
+    # This instructs the simulator to execute corrections using your original design parameters
+    # Kp: If too low, arm will feel weak; if too high, arm will oscillate and overshoot
+    # Ki: If too low, arm will experience steady-state error; if too high robot will overshoot the target and drift out of control
+    # Kd: If too low, arm will jerk aggressively; if too high, joints will be too stiff and unresponsive.  
+    # Kd << This is the most sensitive parameter to tune, so adjust carefully.
     gains:
-      rail_joint:        {p: 500.0, i: 1.0,  d: 25.0}  # Heavy rail requires higher proportional force
-      base_joint:        {p: 2.5,   i: 0.01, d: 0.15}  # Matches teammate's exact tuning profile
-      shoulder_joint:    {p: 2.5,   i: 0.01, d: 0.15}  # Matches teammate's exact tuning profile
-      elbow_joint:       {p: 2.5,   i: 0.01, d: 0.15}  # Matches teammate's exact tuning profile
-      wrist_pitch_joint: {p: 2.5,   i: 0.01, d: 0.15}  # Matches teammate's exact tuning profile
-      wrist_roll_joint:  {p: 2.5,   i: 0.01, d: 0.15}  # Matches teammate's exact tuning profile
+      # Heavy 20kg mass payload: High muscle (P) and braking (D) to handle heavy shifting inertia.
+      rail_joint:        {p: 1200.0, i: 5.0,  d: 50.0}
+      
+      # Horizonal Turn-table: Moderate muscle, high dampening (D) to stop the arm from swinging past goals.
+      base_joint:        {p: 400.0,  i: 0.1,  d: 30.0}
+      
+      # Cantilever Pivot (MAX GRAVITY): High muscle (P) to lift arm weight, strong accumulation (I) to fight sag.
+      shoulder_joint:    {p: 800.0,  i: 5.0,  d: 40.0}
+      
+      # Forearm Reach: Medium muscle, high derivative brake (D) to ensure micro-precision when approaching berries.
+      elbow_joint:       {p: 500.0,  i: 2.0,  d: 35.0}
+      
+      # Lightweight Wrist: Lower muscle to prevent high-frequency buzzing, light (I) to keep tool flat.
+      wrist_pitch_joint: {p: 80.0,   i: 0.5,  d: 4.0}
+      
+      # Fast Pluck Twist: Highly agile, low friction dampening to execute rapid stem-snapping maneuvers.
+      wrist_roll_joint:  {p: 30.0,   i: 0.05, d: 1.0}

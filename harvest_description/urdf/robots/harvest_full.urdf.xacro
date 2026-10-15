@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="harvest_280">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="harvest_robot">
 
   <xacro:include filename="$(find harvest_description)/urdf/mech/rail.urdf.xacro"/>
   <xacro:include filename="$(find harvest_description)/urdf/mech/harvest_arm.urdf.xacro"/>

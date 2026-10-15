@@ -1,61 +1,59 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-	<xacro:include filename="$(find harvest_description)/urdf/robot_utils.urdf.xacro"/>
+  <xacro:include filename="$(find harvest_description)/urdf/robot_utils.urdf.xacro"/>
 
-	<xacro:macro name="soft_gripper">
-		<!-- CAMERA AND 3 FINGER GRIPPER -->
-		<!-- The tool mount is the attachment point for the camera and fingers. -->
-		<!-- Eye-in-Hand Camera Mount -->
-		<joint name="camera_joint" type="fixed">
-			<parent link="end_effector_tool_mount"/>
-			<child link="camera_link"/>
-			<origin xyz="0.06 0 0.02" rpy="0 0 0"/>
-		</joint>
+  <xacro:macro name="soft_gripper">
+    <!-- This frame is mounted on the fourth gearbox output, above the blue link. -->
+    <!-- The camera sits on the rear of the mount, away from the grasping area. -->
+    <joint name="camera_joint" type="fixed">
+      <parent link="end_effector_tool_mount"/>
+      <child link="camera_link"/>
+      <origin xyz="0.0125 0.02 0.02" rpy="0 0 0"/>
+    </joint>
 
-		<link name="camera_link">
-			<visual> 
-			<geometry><box size="0.03 0.03 0.02"/></geometry>
-			<material name="red"/>
-			</visual>
-			<collision>
-			<geometry><box size="0.03 0.03 0.02"/></geometry>
-			</collision>
-			<!-- Lightweight camera module (0.05 kg / 50 grams) -->
-			<xacro:box_inertial mass="0.05" x="0.03" y="0.03" z="0.02">
-			<origin xyz="0 0 0" rpy="0 0 0"/>
-			</xacro:box_inertial>
-		</link>
+    <link name="camera_link">
+      <visual>
+        <geometry><box size="0.035 0.035 0.025"/></geometry>
+        <material name="red"/>
+      </visual>
+      <collision>
+        <geometry><box size="0.035 0.035 0.025"/></geometry>
+      </collision>
+      <xacro:box_inertial mass="0.05" x="0.035" y="0.035" z="0.025">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </xacro:box_inertial>
+    </link>
 
-		<!-- Gripper Finger Macro -->
-		<xacro:macro name="finger" params="prefix yaw_angle">
-			<joint name="finger_joint_${prefix}" type="fixed">
-			<parent link="end_effector_tool_mount"/>
-			<child link="finger_link_${prefix}"/>
-			<origin xyz="${0.03 * cos(yaw_angle)} ${0.03 * sin(yaw_angle)} 0.02" rpy="0 0.2 ${yaw_angle}"/>
-			</joint>
+      <!-- Finger Template Macro (Instantiates 3 flexible grasping links at 120-degree patterns) -->
+    <!-- Each lightweight 80 mm finger extends forward along the arm's +X axis. -->
+    <xacro:macro name="finger" params="prefix angle">
+      <joint name="finger_joint_${prefix}" type="fixed">
+        <parent link="end_effector_tool_mount"/>
+        <child link="finger_link_${prefix}"/>
+        <origin xyz="0.005 ${0.025 * cos(angle)} ${0.025 * sin(angle)}"
+                rpy="${angle} 0 0"/>
+      </joint>
 
-			<link name="finger_link_${prefix}">
-			<visual>
-				<origin xyz="0 0 0.04" rpy="0 0 0"/>
-				<geometry><box size="0.01 0.015 0.08"/></geometry>
-				<material name="green"/>
-			</visual>
-			<collision>
-				<origin xyz="0 0 0.04" rpy="0 0 0"/>
-				<geometry><box size="0.01 0.015 0.08"/></geometry>
-			</collision>
-			<!-- Ultra-lightweight soft silicone/rubber finger strand (0.02 kg / 20 grams) -->
-			<xacro:box_inertial mass="0.02" x="0.01" y="0.015" z="0.08">
-				<origin xyz="0 0 0.04" rpy="0 0 0"/>
-			</xacro:box_inertial>
-			</link>
-		</xacro:macro>
+      <link name="finger_link_${prefix}">
+        <visual>
+          <origin xyz="0.04 0 0" rpy="0 0 0"/>
+          <geometry><box size="0.08 0.012 0.012"/></geometry>
+          <material name="green"/>
+        </visual>
+        <collision>
+          <origin xyz="0.04 0 0" rpy="0 0 0"/>
+          <geometry><box size="0.08 0.012 0.012"/></geometry>
+        </collision>
+        <xacro:box_inertial mass="0.02" x="0.08" y="0.012" z="0.012">
+          <origin xyz="0.04 0 0" rpy="0 0 0"/>
+        </xacro:box_inertial>
+      </link>
+    </xacro:macro>
 
-		<!-- Instantiate the 3 soft fingers -->
-		<xacro:finger prefix="1" yaw_angle="0.0"/>
-		<xacro:finger prefix="2" yaw_angle="2.094"/>
-		<xacro:finger prefix="3" yaw_angle="4.188"/>
-
-	</xacro:macro>
+    <!-- The fingers are spaced at 120-degree intervals -->
+    <xacro:finger prefix="1" angle="0.0"/>
+    <xacro:finger prefix="2" angle="2.094395"/>
+    <xacro:finger prefix="3" angle="4.188790"/>
+  </xacro:macro>
 </robot>

@@ -13,7 +13,7 @@ find_package(geometry_msgs REQUIRED)
 
 # Install directories to share space
 install(
-  DIRECTORY launch urdf rviz
+  DIRECTORY launch urdf rviz meshes
   DESTINATION share/${PROJECT_NAME}
 )
 

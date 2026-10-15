@@ -4,6 +4,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+# ADD THIS IMPORT EXPLICITLY FOR JAZZY STRING PARSING
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -17,16 +19,19 @@ def generate_launch_description():
     model = LaunchConfiguration('model', default=default_model_path)
     rviz_config = LaunchConfiguration('rviz_config', default=default_rviz_config_path)
 
+    # WRAP THE COMMAND STRING SO LAUNCH DOES NOT CONFUSE XML FOR YAML
+    robot_description_content = ParameterValue(
+        Command(['xacro ', model]), 
+        value_type=str
+    )
+
     # Robot State Publisher Node (processes Xacro using Command substitution)
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
         output='screen',
-        parameters=[{
-            # Expand the Xacro at launch time and publish the resulting URDF.
-            'robot_description': Command(['xacro', ' ', model]),
-        }]
+        parameters=[{'robot_description': robot_description_content}]
     )
 
     # Joint State Publisher GUI Node (provides sliders to move the joints in RViz)
@@ -35,6 +40,7 @@ def generate_launch_description():
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
         output='screen',
+        parameters=[{'robot_description': robot_description_content}]
     )
 
     rviz_node = Node(
