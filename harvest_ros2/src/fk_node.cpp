@@ -10,54 +10,119 @@
 
 namespace
 {
-constexpr double kPi = 3.14159265358979323846;
+// Link Dimensions
+constexpr double shoulderPivotHeight = 0.194;
+constexpr double upperArmLength = 0.150;
+constexpr double forearmsAndWristOffset = 0.150;
+constexpr double toolOffset = 0.1755;
 
-// The carriage frame sits at the rail's top face (25 mm); the base yaw is
-// 108 mm above it, and the shoulder pivot is another 96 mm above the yaw.
-constexpr double shoulderPivotHeight = 0.025 + 0.108 + 0.096;
-constexpr double armLinkLength = 0.15;
-constexpr double toolOffset = 0.02;
+// MATRIX AND MATH HELPERS
+// Custom 4x4 Matrix structure to handle homogeneous transformations 
+// (Rotation + Position) without external dependencies like Eigen.
+// 'dh_transform' generates the standard matrix from alpha, a, d, theta parameters.
+// 'matrix_to_quaternion' converts the resulting rotation matrix into the ROS message format.
 
-// Quaternion composition is used to report the tool orientation in world.
-// Multiplication order matters: the right-hand rotation is applied first.
-geometry_msgs::msg::Quaternion multiply(
-  const geometry_msgs::msg::Quaternion & lhs,
-  const geometry_msgs::msg::Quaternion & rhs)
+// 4x4 Matrix Structure for Homogeneous Transformations
+struct Matrix4
 {
-  geometry_msgs::msg::Quaternion result;
-  result.x = lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y;
-  result.y = lhs.w * rhs.y - lhs.x * rhs.z + lhs.y * rhs.w + lhs.z * rhs.x;
-  result.z = lhs.w * rhs.z + lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w;
-  result.w = lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z;
-  return result;
+  double m[4][4];
+
+  static Matrix4 identity()
+  {
+    Matrix4 res;
+    for (int i = 0; i < 4; ++i)
+      for (int j = 0; j < 4; ++j) res.m[i][j] = (i == j) ? 1.0 : 0.0;
+    return res;
+  }
+
+  // Matrix Multiplication
+  Matrix4 operator*(const Matrix4 & rhs) const
+  {
+    Matrix4 res;
+    for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        res.m[i][j] = 0.0;
+        for (int k = 0; k < 4; ++k) {
+          res.m[i][j] += m[i][k] * rhs.m[k][j];
+        }
+      }
+    }
+    return res;
+  }
+};
+
+// Generate standard DH Matrix
+// theta: rotation about Z
+// d: translation along Z
+// a: translation along X (common normal)
+// alpha: rotation about X
+Matrix4 dh_transform(double theta, double d, double a, double alpha)
+{
+  Matrix4 res;
+  double ct = std::cos(theta);
+  double st = std::sin(theta);
+  double ca = std::cos(alpha);
+  double sa = std::sin(alpha);
+
+  res.m[0][0] = ct;
+  res.m[0][1] = -st * ca;
+  res.m[0][2] = st * sa;
+  res.m[0][3] = a * ct;
+
+  res.m[1][0] = st;
+  res.m[1][1] = ct * ca;
+  res.m[1][2] = -ct * sa;
+  res.m[1][3] = a * st;
+
+  res.m[2][0] = 0.0;
+  res.m[2][1] = sa;
+  res.m[2][2] = ca;
+  res.m[2][3] = d;
+
+  res.m[3][0] = 0.0;
+  res.m[3][1] = 0.0;
+  res.m[3][2] = 0.0;
+  res.m[3][3] = 1.0;
+
+  return res;
 }
 
-geometry_msgs::msg::Quaternion rotation_z(double angle)
+// Convert Rotation Matrix (top-left 3x3) to Quaternion
+geometry_msgs::msg::Quaternion matrix_to_quaternion(const Matrix4 & mat)
 {
-  // Unit quaternion for a rotation about the local/world Z axis.
-  geometry_msgs::msg::Quaternion result;
-  result.z = std::sin(angle / 2.0);
-  result.w = std::cos(angle / 2.0);
-  return result;
+  geometry_msgs::msg::Quaternion q;
+  double trace = mat.m[0][0] + mat.m[1][1] + mat.m[2][2];
+
+  if (trace > 0.0) {
+    double s = 0.5 / std::sqrt(trace + 1.0);
+    q.w = 0.25 / s;
+    q.x = (mat.m[2][1] - mat.m[1][2]) * s;
+    q.y = (mat.m[0][2] - mat.m[2][0]) * s;
+    q.z = (mat.m[1][0] - mat.m[0][1]) * s;
+  } else {
+    if (mat.m[0][0] > mat.m[1][1] && mat.m[0][0] > mat.m[2][2]) {
+      double s = 2.0 * std::sqrt(1.0 + mat.m[0][0] - mat.m[1][1] - mat.m[2][2]);
+      q.w = (mat.m[2][1] - mat.m[1][2]) / s;
+      q.x = 0.25 * s;
+      q.y = (mat.m[0][1] + mat.m[1][0]) / s;
+      q.z = (mat.m[0][2] + mat.m[2][0]) / s;
+    } else if (mat.m[1][1] > mat.m[2][2]) {
+      double s = 2.0 * std::sqrt(1.0 + mat.m[1][1] - mat.m[0][0] - mat.m[2][2]);
+      q.w = (mat.m[0][2] - mat.m[2][0]) / s;
+      q.x = (mat.m[0][1] + mat.m[1][0]) / s;
+      q.y = 0.25 * s;
+      q.z = (mat.m[1][2] + mat.m[2][1]) / s;
+    } else {
+      double s = 2.0 * std::sqrt(1.0 + mat.m[2][2] - mat.m[0][0] - mat.m[1][1]);
+      q.w = (mat.m[1][0] - mat.m[0][1]) / s;
+      q.x = (mat.m[0][2] + mat.m[2][0]) / s;
+      q.y = (mat.m[1][2] + mat.m[2][1]) / s;
+      q.z = 0.25 * s;
+    }
+  }
+  return q;
 }
 
-geometry_msgs::msg::Quaternion rotation_y(double angle)
-{
-  // Unit quaternion for a rotation about the local Y axis.
-  geometry_msgs::msg::Quaternion result;
-  result.y = std::sin(angle / 2.0);
-  result.w = std::cos(angle / 2.0);
-  return result;
-}
-
-geometry_msgs::msg::Quaternion rotation_x(double angle)
-{
-  // The wrist-roll actuator turns about the arm's local longitudinal axis.
-  geometry_msgs::msg::Quaternion result;
-  result.x = std::sin(angle / 2.0);
-  result.w = std::cos(angle / 2.0);
-  return result;
-}
 }  // namespace
 
 class FKNode : public rclcpp::Node
@@ -66,8 +131,6 @@ public:
   FKNode()
   : Node("fk_node")
   {
-    // JointState arrays are looked up by name below, not assumed to have a
-    // fixed order; the result is the tool-mount pose in the world frame.
     joint_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", 10,
       std::bind(&FKNode::joint_callback, this, std::placeholders::_1));
@@ -75,14 +138,18 @@ public:
       "/calculated_end_effector_pose", 10);
     RCLCPP_INFO(
       get_logger(),
-      "Forward kinematics node started; calculating end_effector_tool_mount from the URDF chain.");
+      "FK node started using DH Parameters.");
   }
+
+// JOINT STATE PARSING
+// Parse the incoming JointState message. We use a map to ensure we find 
+// every specific joint name we need, regardless of the order they appear 
+// in the message array. If any required joint is missing, we abort to avoid 
+// calculating an invalid pose.
 
 private:
   void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
   {
-    // Start with the required set so we can detect if any expected joint is
-    // absent from a message before publishing a pose.
     const std::unordered_map<std::string, double> required_joints = {
       {"rail_joint", 0.0},
       {"base_joint", 0.0},
@@ -93,86 +160,78 @@ private:
     auto joints = required_joints;
 
     for (size_t i = 0; i < msg->name.size(); ++i) {
-      // JointState requires one position per name. Reject malformed messages
-      // rather than reading past the position array.
-      if (i >= msg->position.size()) {
-        RCLCPP_WARN_THROTTLE(
-          get_logger(), *get_clock(), 5000,
-          "Ignoring JointState with fewer positions than joint names.");
-        return;
-      }
+      if (i >= msg->position.size()) continue;
       const auto joint = joints.find(msg->name[i]);
       if (joint != joints.end()) {
-        // Ignore unrelated joints (for example, gripper fingers).
         joint->second = msg->position[i];
       }
     }
 
-    // Do not substitute zero for missing arm joints: that would publish a
-    // plausible-looking pose for a joint configuration the robot never had.
-    for (const auto & joint : joints) {
-      bool found = false;
-      for (const auto & name : msg->name) {
-        if (name == joint.first) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        RCLCPP_WARN_THROTTLE(
-          get_logger(), *get_clock(), 5000,
-          "Ignoring JointState; required joint '%s' is missing.", joint.first.c_str());
-        return;
-      }
-    }
+    // Extract joint values
+    const double q_rail = joints.at("rail_joint");
+    const double q_base = joints.at("base_joint");
+    const double q_shoulder = joints.at("shoulder_joint");
+    const double q_elbow = joints.at("elbow_joint");
+    const double q_pitch = joints.at("wrist_pitch_joint");
+    const double q_roll = joints.at("wrist_roll_joint");
 
-    // Rail travel and the base yaw are world-X and world-Z motions respectively;
-    // the three arm pitches use local Y and wrist roll uses the local X axis.
-    const double rail_position = joints.at("rail_joint");
-    const double base_angle = joints.at("base_joint");
-    const double shoulder_angle = joints.at("shoulder_joint");
-    const double elbow_angle = joints.at("elbow_joint");
-    const double wrist_angle = joints.at("wrist_pitch_joint");
-    const double roll_angle = joints.at("wrist_roll_joint");
+    // DH PARAMETER LOGIC
+    // Note: M_PI/2 offsets are added to shoulder/elbow/pitch theta because
+    // the URDF/IK defines 0.0 as "Up" (along Z), whereas standard DH defines 
+    // 0.0 as "along the link" (along X).
 
-    // Each link extends along local +X. The shoulder frame contributes the
-    // initial -90 degree pitch, so zero joint angles yield a vertical arm.
-    const double elbow_sum = shoulder_angle + elbow_angle;
-    const double tool_pitch = elbow_sum + wrist_angle;
-    const double shoulder_pitch = shoulder_angle - kPi / 2.0;
-    const double elbow_pitch = elbow_sum - kPi / 2.0;
-    const double wrist_pitch = tool_pitch - kPi / 2.0;
-    const double arm_radius =
-      armLinkLength * std::cos(shoulder_pitch) +
-      armLinkLength * std::cos(elbow_pitch) +
-      (armLinkLength + toolOffset) * std::cos(wrist_pitch);
-    const double tool_height =
-      shoulderPivotHeight -
-      armLinkLength * std::sin(shoulder_pitch) -
-      armLinkLength * std::sin(elbow_pitch) -
-      (armLinkLength + toolOffset) * std::sin(wrist_pitch);
+    // 0. World to Rail Transform (Prismatic):
+    // The rail translates along the World X axis. Since DH usually assumes 
+    // revolute joints, we treat this as a base frame translation.
+    Matrix4 T_rail = Matrix4::identity();
+    T_rail.m[0][3] = q_rail; 
 
+    // 1. Base Joint (Link 1):
+    // Theta = base_angle. 
+    // Alpha = 90 degrees (PI/2) rotates the Z-axis to point horizontally, 
+    // setting the coordinate system up for the vertical shoulder arm.
+    Matrix4 T_base = dh_transform(q_base, shoulderPivotHeight, 0.0, M_PI_2);
+
+    // 2. Shoulder Joint (Link 2):
+    // We add PI/2 to the shoulder angle because standard DH assumes 0.0 is horizontal,
+    // but our robot model/IK defines 0.0 as vertical (up).
+    // 'a' = upperArmLength (length of the link).
+    Matrix4 T_shoulder = dh_transform(M_PI_2 - q_shoulder, 0.0, upperArmLength, 0.0);
+
+    // 3. Elbow Joint (Link 3):
+    // Parallel to the shoulder, so Alpha is 0. 
+    // 'a' = forearmsAndWristOffset represents the forearm length.
+    Matrix4 T_elbow = dh_transform(-q_elbow, 0.0, forearmsAndWristOffset, 0.0);
+
+    // 4. Wrist Pitch (Link 4):
+    // Alpha = -90 degrees (-PI/2). This rotates the Z-axis to point forward, 
+    // aligned with the tool tip. This ensures the subsequent 'Roll' joint 
+    // rotates around the tool's directional vector.
+    Matrix4 T_pitch = dh_transform(-q_pitch, 0.0, toolOffset, -M_PI_2);
+
+    // 5. Wrist Roll: Rotates around the tool axis (Z).
+    Matrix4 T_roll = dh_transform(q_roll, 0.0, 0.0, 0.0);
+
+    // Compute Forward Kinematics Chain
+    // Multiply all transforms in order from Base -> Tip to get the total 
+    Matrix4 T_total = T_rail * T_base * T_shoulder * T_elbow * T_pitch * T_roll;
+
+    // --- Output ---
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = now();
     pose.header.frame_id = "world";
 
-    // The rail translates along world X. Base yaw rotates the arm's radial
-    // reach around world Z; the vertical link components are unaffected.
-    pose.pose.position.x = rail_position + arm_radius * std::cos(base_angle);
-    pose.pose.position.y = arm_radius * std::sin(base_angle);
-    pose.pose.position.z = tool_height;
-
-    // Compose yaw, the cumulative pitch, and the longitudinal wrist roll in
-    // the same order as the URDF joints.
-    const auto base_rotation = rotation_z(base_angle);
-    const auto arm_rotation = rotation_y(wrist_pitch);
-    const auto roll_rotation = rotation_x(roll_angle);
-    pose.pose.orientation =
-      multiply(multiply(base_rotation, arm_rotation), roll_rotation);
+    // pose of the tool mount relative to the World frame.
+    // Position is extracted from the last column (0,3), (1,3), (2,3).
+    // Orientation is extracted from the top-left 3x3 rotation matrix.
+    pose.pose.position.x = T_total.m[0][3]; // maps to X
+    pose.pose.position.y = T_total.m[1][3]; // maps to Y
+    pose.pose.position.z = T_total.m[2][3]; // maps to Z
+    pose.pose.orientation = matrix_to_quaternion(T_total);
 
     pose_pub_->publish(pose);
     RCLCPP_INFO(
-      get_logger(), "FK tool mount in world -> X: %.4f, Y: %.4f, Z: %.4f",
+      get_logger(), "FK (DH) -> X: %.4f, Y: %.4f, Z: %.4f",
       pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
   }
 

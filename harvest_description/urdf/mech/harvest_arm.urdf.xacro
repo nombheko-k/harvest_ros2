@@ -80,7 +80,7 @@
         <geometry><mesh filename="package://harvest_description/meshes/base_to_link.gltf"/></geometry>
       </visual>
       <!-- Housing parts are CAD-aligned to the shoulder output frame at z=0.096. -->
-      <xacro:actuator_housing_visuals xyz="0 0.037 0.096"
+      <xacro:actuator_housing_visuals xyz="0 0.045 0.061"
                                       housing_rpy="1.5708 -1.5708 0"
                                       internal_rpy="1.5708 1.26905 0"/>
       <collision>
@@ -100,7 +100,7 @@
       <parent link="shoulder_link"/>
       <child link="elbow_link"/>
       <!-- A zero shoulder angle now points the arm upward for a safe spawn pose. -->
-      <origin xyz="0 0 0.096" rpy="0 -1.5708 0"/>
+      <origin xyz="0 0 0.061" rpy="0 -1.5708 0"/>
       <axis xyz="0 1 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="3.92" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
@@ -244,7 +244,7 @@
     <joint name="wrist_roll_actuator_mount" type="fixed">
       <parent link="wrist_roll_link"/>
       <child link="wrist_roll_actuator_link"/>
-      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <origin xyz="0.14 -0.072 0" rpy="0 0 0"/>
     </joint>
 
     <link name="wrist_roll_actuator_link">
@@ -276,10 +276,12 @@
       <xacro:output_drive_visual xyz="-0.057 0 0"
                                  rpy="1.5708 0.163976 1.5708"/>
       <visual>
+        <origin xyz="0 0 0" rpy="0 1.5708 0"/>
         <geometry><cylinder radius="0.035" length="0.012"/></geometry>
         <material name="silver"/>
       </visual>
       <collision>
+        <origin xyz="0 0 0" rpy="0 1.5708 0"/>
         <geometry><cylinder radius="0.035" length="0.012"/></geometry>
       </collision>
       <inertial>

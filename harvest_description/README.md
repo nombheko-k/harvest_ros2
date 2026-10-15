@@ -15,9 +15,12 @@ The arm uses the supplied Onshape glTF assets for the base, pedestal, actuator
 housings, motors, and structural links, including the dark-blue distal link.
 These are installed with the package and used for visuals; simple link collision
 bodies are retained for robust Gazebo physics. The base yaw pivot is 108 mm above
-the carriage, and the shoulder pivot is another 96 mm above it. A 20 mm tool
-flange offset places the gripper on the fourth gearbox output face. The shoulder
-frame keeps the zero-angle arm straight up, clear of the rail and floor.
+the carriage, and the shoulder pivot is another 96 mm above it, offset 3.61 mm
+in X and -1.72 mm in Y to match the original assembly. A 20 mm tool flange
+offset places the gripper on the fourth gearbox output face. The shoulder frame
+keeps the zero-angle arm straight up, clear of the rail and floor. The tool
+mount flange is oriented perpendicular to the arm axis, so it is horizontal
+when the arm is upright.
 
 Actuator housing and output-pin visuals use the individual CAD output-drive
 frames. Each purple output pin is attached to the link it drives, so it follows

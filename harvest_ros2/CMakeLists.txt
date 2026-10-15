@@ -17,7 +17,7 @@ ament_target_dependencies(fk_node rclcpp sensor_msgs geometry_msgs)
 
 # Inverse Kinematics Node
 add_executable(ik_node src/ik_node.cpp)
-ament_target_dependencies(ik_node rclcpp geometry_msgs trajectory_msgs)
+ament_target_dependencies(ik_node rclcpp geometry_msgs trajectory_msgs sensor_msgs)
 
 install(TARGETS
   fk_node

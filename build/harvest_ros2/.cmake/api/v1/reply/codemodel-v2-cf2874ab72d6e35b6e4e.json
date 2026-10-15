@@ -1,0 +1,88 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-RelWithDebInfo-465b1a21bbf1aa32a59d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"name" : "RelWithDebInfo",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "harvest_ros2",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "fk_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-fk_node-RelWithDebInfo-e12af13a93820f7ea2be.json",
+					"name" : "fk_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "harvest_ros2_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-harvest_ros2_uninstall-RelWithDebInfo-6141747bd3ece9efaa96.json",
+					"name" : "harvest_ros2_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ik_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ik_node-RelWithDebInfo-8e8567b0276d63ae56c9.json",
+					"name" : "ik_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-RelWithDebInfo-4aeb2f1bf708e059fd22.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_ros2",
+		"source" : "/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}
