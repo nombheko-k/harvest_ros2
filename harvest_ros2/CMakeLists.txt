@@ -12,11 +12,11 @@ find_package(geometry_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 
 # Forward Kinematics Node
-add_executable(fk_node src/fk_node.cpp)
+add_executable(fk_node src/kinematics_nodes/fk_node.cpp)
 ament_target_dependencies(fk_node rclcpp sensor_msgs geometry_msgs)
 
 # Inverse Kinematics Node
-add_executable(ik_node src/ik_node.cpp)
+add_executable(ik_node src/kinematics_nodes/ik_node.cpp)
 ament_target_dependencies(ik_node rclcpp geometry_msgs trajectory_msgs sensor_msgs)
 
 install(TARGETS

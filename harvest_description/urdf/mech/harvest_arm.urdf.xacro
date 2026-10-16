@@ -61,12 +61,14 @@
     </link>
 
     <!-- The yaw axis sits at the top of the 108 mm pedestal, not in the rail. -->
+    <!-- J1 Base Yaw -->
     <joint name="base_joint" type="revolute">
       <parent link="base_link"/>
       <child link="shoulder_link"/>
       <origin xyz="0 0 0.108" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="-3.14159" upper="3.14159" effort="3.92" velocity="1.0"/>
+      <!-- updated all joint limit tags so that arm does not sag under gravity. -->
+      <limit lower="-3.14159" upper="3.14159" effort="10.0" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 
@@ -96,13 +98,14 @@
     </link>
 
     <!-- Link 1 is 150 mm center-to-center; its 100 g mass is from the sheet. -->
+    <!-- J2 Shoulder Pitch (Lifts the entire 2kg arm assembly) -->
     <joint name="shoulder_joint" type="revolute">
       <parent link="shoulder_link"/>
       <child link="elbow_link"/>
       <!-- A zero shoulder angle now points the arm upward for a safe spawn pose. -->
       <origin xyz="0 0 0.061" rpy="0 -1.5708 0"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-1.5708" upper="1.5708" effort="3.92" velocity="1.0"/>
+      <limit lower="-1.5708" upper="1.5708" effort="15.0" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 
@@ -153,11 +156,12 @@
     </link>
 
     <!-- Link 2 is the second 150 mm link, with its 100 g structural mass. -->
+    <!-- J3 Elbow Pitch (Lifts the forearm, two actuators, and gripper) -->
     <joint name="elbow_joint" type="revolute">
       <parent link="elbow_actuator_link"/>
       <child link="wrist_pitch_link"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-2.0" upper="2.0" effort="2.94" velocity="1.0"/>
+      <limit lower="-2.0" upper="2.0" effort="10.0" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 
@@ -207,11 +211,12 @@
     </link>
 
     <!-- Link 3 is the 150 g, 150 mm wrist link from the actuator sheet. -->
+    <!-- J4 Wrist Pitch (Lifts the roll actuator and gripper) -->
     <joint name="wrist_pitch_joint" type="revolute">
       <parent link="wrist_pitch_actuator_link"/>
       <child link="wrist_roll_link"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-1.5708" upper="1.5708" effort="0.956" velocity="1.5"/>
+      <limit lower="-1.5708" upper="1.5708" effort="5.0" velocity="1.5"/>
       <dynamics damping="0.1" friction="0.02"/>
     </joint>
 
@@ -262,13 +267,14 @@
       </inertial>
     </link>
 
+    <!-- J5 Wrist Roll -->
     <joint name="wrist_roll_joint" type="revolute">
       <parent link="wrist_roll_actuator_link"/>
       <child link="end_effector_tool_mount"/>
       <!-- Place the tool flange on the output face, above the housing when upright. -->
       <origin xyz="0.02 0 0" rpy="0 0 0"/>
       <axis xyz="1 0 0"/>
-      <limit lower="-3.14159" upper="3.14159" effort="2.94" velocity="1.5"/>
+      <limit lower="-3.14159" upper="3.14159" effort="5.0" velocity="1.5"/>
       <dynamics damping="0.1" friction="0.02"/>
     </joint>
 
