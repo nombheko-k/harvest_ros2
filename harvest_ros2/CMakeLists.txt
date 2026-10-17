@@ -19,9 +19,14 @@ ament_target_dependencies(fk_node rclcpp sensor_msgs geometry_msgs)
 add_executable(ik_node src/kinematics_nodes/ik_node.cpp)
 ament_target_dependencies(ik_node rclcpp geometry_msgs trajectory_msgs sensor_msgs)
 
+# Trajectory Planner Executable
+add_executable(trajectory_planner_node src/trajectory_nodes/trajectory_planner_node.cpp)
+ament_target_dependencies(trajectory_planner_node rclcpp trajectory_msgs builtin_interfaces sensor_msgs)
+
 install(TARGETS
   fk_node
   ik_node
+  trajectory_planner_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

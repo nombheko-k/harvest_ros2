@@ -45,9 +45,9 @@ public:
     target_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       "/harvest_target_pose", 10,
       std::bind(&UniversalWristIKNode::target_callback, this, std::placeholders::_1));
-    trajectory_pub_ = create_publisher<trajectory_msgs::msg::JointTrajectory>(
-      "/arm_controller/joint_trajectory", 10);
-    RCLCPP_INFO(get_logger(), "IK node started for updated harvest arm.");
+    trajectory_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
+    "/ik_node/raw_joint_targets", 10);
+    RCLCPP_INFO(get_logger(), "IK node started for harvest arm.");
   }
 
 private:
