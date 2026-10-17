@@ -32,21 +32,23 @@ arm_controller:
     # Ki: If too low, arm will experience steady-state error; if too high robot will overshoot the target and drift out of control
     # Kd: If too low, arm will jerk aggressively; if too high, joints will be too stiff and unresponsive.  
     # Kd << This is the most sensitive parameter to tune, so adjust carefully.
+    
+    # Updated 
     gains:
-      # Heavy 20kg mass payload: High muscle (P) and braking (D) to handle heavy shifting inertia.
+      # Rail: Unchanged, easily handles the base carriage
       rail_joint:        {p: 1200.0, i: 5.0,  d: 50.0}
       
-      # Horizonal Turn-table: Moderate muscle, high dampening (D) to stop the arm from swinging past goals.
-      base_joint:        {p: 400.0,  i: 0.1,  d: 30.0}
+      # Base: Slight P bump to swing the higher rotational inertia
+      base_joint:        {p: 600.0,  i: 1.0,  d: 40.0}
       
-      # Cantilever Pivot (MAX GRAVITY): High muscle (P) to lift arm weight, strong accumulation (I) to fight sag.
-      shoulder_joint:    {p: 800.0,  i: 5.0,  d: 40.0}
+      # Shoulder: Massive P and I increase to lift the new cantilevered mass
+      shoulder_joint:    {p: 1500.0, i: 20.0, d: 80.0}
       
-      # Forearm Reach: Medium muscle, high derivative brake (D) to ensure micro-precision when approaching berries.
-      elbow_joint:       {p: 500.0,  i: 2.0,  d: 35.0}
+      # Elbow: Doubled muscle to manage the heavy wrist/tool assembly
+      elbow_joint:       {p: 1000.0, i: 10.0, d: 60.0}
       
-      # Lightweight Wrist: Lower muscle to prevent high-frequency buzzing, light (I) to keep tool flat.
-      wrist_pitch_joint: {p: 80.0,   i: 0.5,  d: 4.0}
+      # Wrist Pitch: Increased to support the 0.575kg roll actuator
+      wrist_pitch_joint: {p: 250.0,  i: 5.0,  d: 15.0}
       
-      # Fast Pluck Twist: Highly agile, low friction dampening to execute rapid stem-snapping maneuvers.
-      wrist_roll_joint:  {p: 30.0,   i: 0.05, d: 1.0}
+      # Wrist Roll: Minor dampening adjustments
+      wrist_roll_joint:  {p: 50.0,   i: 0.1,  d: 2.0}
