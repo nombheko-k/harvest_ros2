@@ -1,7 +1,8 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable
+from launch.substitutions import LaunchConfiguration
+from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command
@@ -17,11 +18,20 @@ def generate_launch_description():
     # Add the installed share directory so Gazebo can find this package's meshes.
     gazebo_resource_path = os.pathsep.join(filter(None, [
         os.path.dirname(pkg_share),
-        os.environ.get('GZ_SIM_RESOURCE_PATH', ''),
+        os.environ.get('GZ_SIM_RESOURCE_PATH', '')
     ]))
     set_gazebo_resource_path = SetEnvironmentVariable(
         name='GZ_SIM_RESOURCE_PATH',
-        value=gazebo_resource_path,
+        value=gazebo_resource_path)
+
+    # 1. Create the LaunchConfiguration variable
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    
+    # 2. Declare the argument so it can be modified via CLI (defaults to true for simulation)
+    declare_use_sim_time_cmd = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='true',
+        description='Use simulation (Gazebo) clock if true'
     )
 
     xacro_file = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_full.urdf.xacro')
@@ -85,6 +95,22 @@ def generate_launch_description():
         output='screen',
     )
 
+    # Pass sim time to your Trajectory Planner
+    trajectory_planner_node = Node(
+        package='harvest_ros2',
+        executable='trajectory_planner_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # Pass sim time to your IK Node
+    ik_node = Node(
+        package='harvest_ros2',
+        executable='ik_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
     # Delayed event hooks: Sequential startup orchestration
     delay_broadcaster_after_spawn = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -102,10 +128,13 @@ def generate_launch_description():
 
     return LaunchDescription([
         set_gazebo_resource_path,
+        declare_use_sim_time_cmd,  # This registers 'use_sim_time' so it exists
         robot_state_publisher_node,
         gazebo_sim,
         clock_bridge,
         spawn_robot,
+        trajectory_planner_node,  # Added explicit launch execution
+        ik_node,                  # Added explicit launch execution
         delay_broadcaster_after_spawn,
         delay_arm_controller_after_broadcaster
     ])

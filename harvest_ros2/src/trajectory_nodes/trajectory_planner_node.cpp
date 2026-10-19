@@ -7,8 +7,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 
-// Define constants matching original structural frames
 constexpr int NUM_JOINTS = 6;
 constexpr double PI = 3.14159265358979323846;
 
@@ -30,13 +30,18 @@ struct Phases {
 class TrajectoryPlannerNode : public rclcpp::Node {
 public:
     TrajectoryPlannerNode() : Node("trajectory_planner_node") {
-        // Subscriber to listen to target raw joint sets coming from your IK Node
         raw_joint_sub_ = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
             "/ik_node/raw_joint_targets", 10, std::bind(&TrajectoryPlannerNode::ik_callback, this, std::placeholders::_1));
 
-        // Publisher to send the fully smoothed multi-point profiles down to the Gazebo controllers
+        // NEW: Subscribe to the joint states outputted by your broadcaster
+        joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
+            "/joint_states", 10, std::bind(&TrajectoryPlannerNode::joint_state_callback, this, std::placeholders::_1));
+
         smooth_trajectory_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
             "/arm_controller/joint_trajectory", 10);
+
+        // Initialize state to 0 safely
+        latest_joint_positions_.fill(0.0);
 
         RCLCPP_INFO(this->get_logger(), "7-Phase S-Curve Joint Trajectory Node is online.");
     }
@@ -44,7 +49,6 @@ public:
 private:
     double clamp(double x, double lo, double hi) { return std::max(lo, std::min(x, hi)); }
 
-    // Lifted from teammate's mathematical core
     Phases CalculatePhases(double S, double Vmax, double Amax, double Jmax) {
         Phases p{};
         if (S <= 0 || Vmax <= 0 || Amax <= 0 || Jmax <= 0) return p;
@@ -78,7 +82,6 @@ private:
         return p;
     }
 
-    // Lifted from teammate's mathematical core
     Output Evaluate(const Input& in, const Phases& p) {
         Output o{};
         double S = std::abs(in.XGoal - in.XStart);
@@ -103,28 +106,53 @@ private:
         return o;
     }
 
+    void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg) {
+        std::vector<std::string> target_order = {
+            "rail_joint", "base_joint", "shoulder_joint", 
+            "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"
+        };
+
+        // Match joint names safely to maintain axis ordering
+        for (size_t i = 0; i < target_order.size(); ++i) {
+            auto it = std::find(msg->name.begin(), msg->name.end(), target_order[i]);
+            if (it != msg->name.end()) {
+                size_t index = std::distance(msg->name.begin(), it);
+                if (index < msg->position.size()) {
+                    latest_joint_positions_[i] = msg->position[index];
+                }
+            }
+        }
+    }
+
     void ik_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr raw_msg) {
         if (raw_msg->points.empty()) return;
+        if (raw_msg->points[0].positions.size() < 6) {
+            RCLCPP_WARN(this->get_logger(), "Incoming IK message has fewer than 6 joints. Processing fallback.");
+        }
 
         auto smooth_msg = trajectory_msgs::msg::JointTrajectory();
-        smooth_msg.header.stamp = this->now();
-        smooth_msg.joint_names = raw_msg->joint_names;
+        smooth_msg.header.stamp = this->get_clock()->now();
+        smooth_msg.joint_names = {
+            "rail_joint", "base_joint", "shoulder_joint", 
+            "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"
+        };
 
-        // Motion limits configured for each respective harvesting axis
         std::array<double, NUM_JOINTS> Vmax = {0.3, 1.0, 1.0, 1.0, 1.5, 1.5};
         std::array<double, NUM_JOINTS> Amax = {0.5, 2.0, 2.0, 2.0, 3.0, 3.0};
         std::array<double, NUM_JOINTS> Jmax = {1.0, 5.0, 5.0, 5.0, 8.0, 8.0};
 
-        // Determine the starting positions (current positions can be requested via /joint_states later)
-        // For testing, we assume the arm currently rests at 0.0 positions
-        std::array<double, NUM_JOINTS> current_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        std::array<double, NUM_JOINTS> goal_positions = {
-            raw_msg->points[0].positions[0], raw_msg->points[0].positions[1],
-            raw_msg->points[0].positions[2], raw_msg->points[0].positions[3],
-            raw_msg->points[0].positions[4], raw_msg->points[0].positions[5]
-        };
+        // replace hardcoded zeros with real positions
+        std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
+        std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-        // Calculate S-curve total phase durations across all 6 axes independently
+        // Securely copy the incoming positions from raw_msg
+        for (size_t i = 0; i < NUM_JOINTS; ++i) {
+            if (i < raw_msg->points[0].positions.size()) {
+                goal_positions[i] = raw_msg->points[0].positions[i];
+            }
+        }
+
+        // Calculate S-curve total phase durations
         double max_total_time = 0.0;
         std::array<Phases, NUM_JOINTS> profiles;
         for (int i = 0; i < NUM_JOINTS; ++i) {
@@ -135,9 +163,17 @@ private:
             }
         }
 
+        // CRITICAL ADAPTATION FOR GAZEBO: Add an explicit t=0 entry point to lock the trajectory start state
+        auto start_point = trajectory_msgs::msg::JointTrajectoryPoint();
+        start_point.time_from_start = rclcpp::Duration::from_seconds(0.0);
+        start_point.positions = {current_positions[0], current_positions[1], current_positions[2], current_positions[3], current_positions[4], current_positions[5]};
+        start_point.velocities = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        start_point.accelerations = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        smooth_msg.points.push_back(start_point);
+
         // Sample the synchronous pathway at 100Hz frequency intervals (dt = 0.01 seconds)
         double dt = 0.01;
-        for (double t = 0; t <= max_total_time; t += dt) {
+        for (double t = dt; t <= max_total_time; t += dt) {
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
 
@@ -151,12 +187,20 @@ private:
             smooth_msg.points.push_back(point);
         }
 
+        if (!smooth_msg.points.empty()) {
+            auto & final_point = smooth_msg.points.back();
+            std::fill(final_point.velocities.begin(), final_point.velocities.end(), 0.0);
+            std::fill(final_point.accelerations.begin(), final_point.accelerations.end(), 0.0);
+        }
+        
         smooth_trajectory_pub_->publish(smooth_msg);
         RCLCPP_INFO(this->get_logger(), "Synchronized smooth S-Curve trajectory successfully broadcasted over %.2f seconds.", max_total_time);
     }
 
     rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr raw_joint_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
     rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr smooth_trajectory_pub_;
+    std::array<double, NUM_JOINTS> latest_joint_positions_;
 };
 
 int main(int argc, char *argv[]) {
