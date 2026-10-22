@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz - Matches the ESP32's 10ms execution loop timeline
+    update_rate: 1000  # 100 Hz - Matches the ESP32's 10ms execution loop timeline
 
     # Broadcasts the current positions of the joints to the network
     joint_state_broadcaster:
