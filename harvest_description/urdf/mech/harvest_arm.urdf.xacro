@@ -68,7 +68,7 @@
       <origin xyz="0 0 0.108" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
       <!-- updated all joint limit tags so that arm does not sag under gravity. -->
-      <limit lower="-3.14159" upper="3.14159" effort="10.0" velocity="1.0"/>
+      <limit lower="-3.14159" upper="3.14159" effort="3.0" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 
@@ -105,7 +105,7 @@
       <!-- A zero shoulder angle now points the arm upward for a safe spawn pose. -->
       <origin xyz="0 0 0.061" rpy="0 -1.5708 0"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-1.5708" upper="1.5708" effort="15.0" velocity="1.0"/>
+      <limit lower="-1.5708" upper="1.5708" effort="3.0" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 
@@ -161,7 +161,7 @@
       <parent link="elbow_actuator_link"/>
       <child link="wrist_pitch_link"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-2.0" upper="2.0" effort="15.0" velocity="1.0"/>
+      <limit lower="-2.0" upper="2.0" effort="3.0" velocity="1.0"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 
@@ -216,7 +216,7 @@
       <parent link="wrist_pitch_actuator_link"/>
       <child link="wrist_roll_link"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-1.5708" upper="1.5708" effort="5.0" velocity="1.5"/>
+      <limit lower="-1.5708" upper="1.5708" effort="3.0" velocity="1.5"/>
       <dynamics damping="0.1" friction="0.02"/>
     </joint>
 
@@ -274,7 +274,7 @@
       <!-- Place the tool flange on the output face, above the housing when upright. -->
       <origin xyz="0.02 0 0" rpy="0 0 0"/>
       <axis xyz="1 0 0"/>
-      <limit lower="-3.14159" upper="3.14159" effort="5.0" velocity="1.5"/>
+      <limit lower="-3.14159" upper="3.14159" effort="3.0" velocity="1.5"/>
       <dynamics damping="0.1" friction="0.02"/>
     </joint>
 

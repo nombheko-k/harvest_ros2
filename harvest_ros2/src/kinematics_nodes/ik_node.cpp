@@ -1,3 +1,4 @@
+// Things to add (maybe): 90deg harvesting twist action, opening and closing gripper.
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -66,8 +67,8 @@ private:
     const double relative_x = target_x - rail_position; 
 
     // Because the tool is offset in Y, the arm's radial plane does not intersect the target directly.
-    const double target_radius_sq = relative_x * relative_x + target_y * target_y;
-    const double y_offset_sq = toolYOffset * toolYOffset;
+    const double target_radius_sq = relative_x * relative_x + target_y * target_y; // This is the horizontal distance from the wrist centre (target) to the base
+    const double y_offset_sq = toolYOffset * toolYOffset; // Calculating the offset
 
     if (target_radius_sq < y_offset_sq) {
       RCLCPP_ERROR(get_logger(), "Target is too close to the yaw axis; unreachable due to Y-offset.");
@@ -78,9 +79,9 @@ private:
     const double planar_radius = std::sqrt(target_radius_sq - y_offset_sq);
     
     // Adjust the base yaw to compensate for the tool's lateral Y-offset
-    const double base_angle = std::atan2(target_y, relative_x) - std::atan2(toolYOffset, planar_radius);
+    const double base_angle = std::atan2(target_y, relative_x) - std::atan2(toolYOffset, planar_radius); // calculate base angle, and subtract offset
 
-    const double wrist_radius = planar_radius - toolXOffset * std::sin(desiredToolPitch);
+    const double wrist_radius = planar_radius - toolXOffset * std::sin(desiredToolPitch); // Calculate the wrist centre
     const double wrist_z = target_z - baseHeight - toolXOffset * std::cos(desiredToolPitch);
 
     const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z;
@@ -90,24 +91,24 @@ private:
     if (cos_elbow < -1.0 - 1e-9 || cos_elbow > 1.0 + 1e-9) {
       RCLCPP_ERROR(get_logger(), "Target is outside the arm's reachable radial workspace.");
       return;
-    }
+    } // Check Reachability workspace
     cos_elbow = std::clamp(cos_elbow, -1.0, 1.0);
 
     bool solution_found = false;
     double shoulder_angle = 0.0, elbow_angle = 0.0, wrist_angle = 0.0;
 
-    for (const double elbow_sign : std::array<double, 2>{1.0, -1.0}) {
+    for (const double elbow_sign : std::array<double, 2>{1.0, -1.0}) { // checking +- sign for elbow joint
       const double try_elbow = elbow_sign * std::acos(cos_elbow);
       const double try_shoulder =
         std::atan2(wrist_radius, wrist_z) -
         std::atan2(forearmLength * std::sin(try_elbow),
-                   upperArmLength + forearmLength * std::cos(try_elbow));
+                   upperArmLength + forearmLength * std::cos(try_elbow)); // calculate shoulder joint angle
                    
-      const double try_wrist = desiredToolPitch - try_shoulder - try_elbow;
+      const double try_wrist = desiredToolPitch - try_shoulder - try_elbow; // wrist joint angle
 
       // URDF limits matching the new model
-      if (inside_range(try_shoulder, -1.5708, 1.5708) &&
-          inside_range(try_elbow, -2.0, 2.0) &&
+      if (inside_range(try_shoulder, -1.5708, 1.5708) && // 180 degrees
+          inside_range(try_elbow, -2.0, 2.0) && // 215 degrees
           inside_range(try_wrist, -1.5708, 1.5708))
       {
         shoulder_angle = try_shoulder;
@@ -123,6 +124,7 @@ private:
       return;
     }
 
+    // print target pose and robot joint angles
     send_trajectory_point(rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle);
     RCLCPP_INFO(get_logger(),
       "IK target (%.3f, %.3f, %.3f); joints (%.3f, %.3f, %.3f, %.3f, %.3f)",

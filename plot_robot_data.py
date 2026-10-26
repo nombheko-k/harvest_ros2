@@ -127,9 +127,8 @@ def main():
     # Calculate true tracking error profile
     error = p_cmd - p_meas
 
-    # =========================================================================
     # GRAPH 1: 7-PHASE TRAJECTORY GENERATION BLOCK DIAGRAM
-    # =========================================================================
+
     fig1, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
     fig1.suptitle("7-Phase Jerk-Limited S-Curve Kinematic Profile (Ideal Commands)", fontsize=14, fontweight='bold')
 
@@ -160,9 +159,8 @@ def main():
     plt.savefig(plot1_path, dpi=300)
     print(f"[+] Saved Layout 1: {plot1_path}")
 
-    # =========================================================================
     # GRAPH 2: CLOSED-LOOP PID TRACKING & PHYSICAL GAZEBO RESPONSE
-    # =========================================================================
+
     fig2, (ax_main, ax_err) = plt.subplots(2, 1, figsize=(10, 7), sharex=True, gridspec_kw={'height_ratios': [2, 1]})
     fig2.suptitle("Closed-Loop PID Performance & Gazebo Physics Response", fontsize=14, fontweight='bold')
 

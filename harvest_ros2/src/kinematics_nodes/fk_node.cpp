@@ -15,6 +15,7 @@ struct Matrix4
 {
   double m[4][4];
 
+  // create 4x4 identity matrix with main diagonal of 1.0
   static Matrix4 identity()
   {
     Matrix4 res;
@@ -23,6 +24,7 @@ struct Matrix4
     return res;
   }
 
+  // performs standard 4x4 matrix multiplication to combine geometric transformations
   Matrix4 operator*(const Matrix4 & rhs) const
   {
     Matrix4 res;
@@ -37,6 +39,7 @@ struct Matrix4
     return res;
   }
 
+  // Constructs a transformation matrix representing pure translation along X,Y,Z
   static Matrix4 translation(double x, double y, double z)
   {
     Matrix4 res = identity();
@@ -46,6 +49,7 @@ struct Matrix4
     return res;
   }
 
+  // Constructs a rotaion matrix around the x-axis
   static Matrix4 rotationX(double roll)
   {
     Matrix4 res = identity();
@@ -55,6 +59,7 @@ struct Matrix4
     return res;
   }
 
+  // around y-axis
   static Matrix4 rotationY(double pitch)
   {
     Matrix4 res = identity();
@@ -64,6 +69,7 @@ struct Matrix4
     return res;
   }
 
+  // around z-axis
   static Matrix4 rotationZ(double yaw)
   {
     Matrix4 res = identity();
@@ -73,6 +79,7 @@ struct Matrix4
     return res;
   }
 
+  // Combines roll, pitch and yaw rotations into a single matrix using Z-Y-X convention 
   static Matrix4 rpy(double roll, double pitch, double yaw)
   {
     return rotationZ(yaw) * rotationY(pitch) * rotationX(roll);
@@ -85,6 +92,7 @@ geometry_msgs::msg::Quaternion matrix_to_quaternion(const Matrix4 & mat)
   geometry_msgs::msg::Quaternion q;
   double trace = mat.m[0][0] + mat.m[1][1] + mat.m[2][2];
 
+  // numerical stability handling for conversion using the matrix trace
   if (trace > 0.0) {
     double s = 0.5 / std::sqrt(trace + 1.0);
     q.w = 0.25 / s;
@@ -117,35 +125,42 @@ geometry_msgs::msg::Quaternion matrix_to_quaternion(const Matrix4 & mat)
 
 }  // namespace
 
+// ROS2 node dedicated to computing the FK chain
 class FKNode : public rclcpp::Node
 {
 public:
   FKNode() : Node("fk_node")
   {
+    // subscribe to incoming robot joint states
     joint_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", 10,
       std::bind(&FKNode::joint_callback, this, std::placeholders::_1));
-    pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
+    // Publisher for the final evaluated end-effector coordinates
+      pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
       "/calculated_end_effector_pose", 10);
     RCLCPP_INFO(get_logger(), "FK node started using URDF-mapped transforms.");
   }
 
 private:
+// callback triggered when new joint state message arrives
   void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
   {
+    //define and initialise the target joint configuration
     const std::unordered_map<std::string, double> required_joints = {
       {"rail_joint", 0.0}, {"base_joint", 0.0}, {"shoulder_joint", 0.0},
       {"elbow_joint", 0.0}, {"wrist_pitch_joint", 0.0}, {"wrist_roll_joint", 0.0}};
     auto joints = required_joints;
 
+    // safely extract relevant joint states from incoming data arrays based on matching names
     for (size_t i = 0; i < msg->name.size(); ++i) {
-      if (i >= msg->position.size()) continue;
+      if (i >= msg->position.size()) continue; // Bounds to guard agianst mismatched arrays
       auto joint = joints.find(msg->name[i]);
       if (joint != joints.end()) {
         joint->second = msg->position[i];
       }
     }
 
+    // Assign mapped joint angles to corresponding local state tracking variables
     const double q_rail = joints.at("rail_joint");
     const double q_base = joints.at("base_joint");
     const double q_shoulder = joints.at("shoulder_joint");
@@ -184,12 +199,16 @@ private:
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = now();
     pose.header.frame_id = "world";
+    // Extract translation vector coordinates directly from matrix right column
     pose.pose.position.x = T_total.m[0][3];
     pose.pose.position.y = T_total.m[1][3];
     pose.pose.position.z = T_total.m[2][3];
+    // convert 3x3 rotational matrix to quaternion
     pose.pose.orientation = matrix_to_quaternion(T_total);
 
+    // Publish to ROS2 
     pose_pub_->publish(pose);
+    // Status logging for ongoing validation and debugging
     RCLCPP_INFO(get_logger(), "FK -> X: %.4f, Y: %.4f, Z: %.4f",
                 pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
 
@@ -203,6 +222,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
 };
 
+// Node initialisation entry point
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);

@@ -1,7 +1,7 @@
 controller_manager:
   ros__parameters:
-    update_rate: 1000  # 100 Hz - Matches the ESP32's 10ms execution loop timeline
-
+    update_rate: 2000  # Increased controller loop rate; 100Hz was causing too much jitter
+    # motion controller must evaluate the 7-phase equations at a high enough frequency to prevent discretization jitter.
     # Broadcasts the current positions of the joints to the network
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster

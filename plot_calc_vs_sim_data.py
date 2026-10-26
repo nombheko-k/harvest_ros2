@@ -126,9 +126,8 @@ def main():
     # Calculate exact kinematic delta (IK Calculation vs FK Gazebo Reality)
     kinematic_error = pos_ik - pos_fk
 
-    # =========================================================================
     # KINEMATIC ERRORS: GRAPH GENERATION
-    # =========================================================================
+
     fig, (ax_main, ax_err) = plt.subplots(2, 1, figsize=(10, 7), sharex=True, gridspec_kw={'height_ratios': [2, 1]})
     fig.suptitle(f"Kinematic Discrepancy Analysis: {target_joint}", fontsize=14, fontweight='bold')
 
