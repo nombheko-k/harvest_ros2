@@ -159,7 +159,7 @@ private:
         }
     }
 
-    // Orchestrates path generation when a new endpoint goal layout is requested
+        // Orchestrates path generation when a new endpoint goal layout is requested
     void ik_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr raw_msg) {
         if (raw_msg->points.empty()) return;
         if (raw_msg->points[0].positions.size() < 6) {
@@ -174,12 +174,11 @@ private:
             "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"
         };
 
-        // Safety thresholds derived from axis and actuator physical specifications
-        std::array<double, NUM_JOINTS> Vmax = {0.3, 1.0, 1.0, 1.0, 1.5, 1.5};
-        std::array<double, NUM_JOINTS> Amax = {0.5, 2.0, 2.0, 2.0, 3.0, 3.0};
-        std::array<double, NUM_JOINTS> Jmax = {1.0, 5.0, 5.0, 5.0, 8.0, 8.0};
+        // Lowered safety thresholds to stay well within the URDF 4.0 Nm effort limit
+        std::array<double, NUM_JOINTS> Vmax_orig = {0.2, 0.5, 0.5, 0.5, 0.8, 0.8};
+        std::array<double, NUM_JOINTS> Amax_orig = {0.3, 0.8, 0.8, 0.8, 1.2, 1.2};
+        std::array<double, NUM_JOINTS> Jmax_orig = {0.6, 1.5, 1.5, 1.5, 2.5, 2.5};
 
-        // replace hardcoded zeros with real positions
         std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
         std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
@@ -190,15 +189,44 @@ private:
             }
         }
 
-        // Calculate profiles and determine the longest execution time to ensure synchronised movement
+        // Pass 1: Calculate original unscaled profiles to find the longest execution time
         double max_total_time = 0.0;
-        std::array<Phases, NUM_JOINTS> profiles;
+        std::array<double, NUM_JOINTS> distances;
+        std::array<Phases, NUM_JOINTS> initial_profiles;
+
         for (int i = 0; i < NUM_JOINTS; ++i) {
-            double distance = std::abs(goal_positions[i] - current_positions[i]);
-            profiles[i] = CalculatePhases(distance, Vmax[i], Amax[i], Jmax[i]);
-            if (profiles[i].Total > max_total_time) {
-                max_total_time = profiles[i].Total;
+            distances[i] = std::abs(goal_positions[i] - current_positions[i]);
+            initial_profiles[i] = CalculatePhases(distances[i], Vmax_orig[i], Amax_orig[i], Jmax_orig[i]);
+            if (initial_profiles[i].Total > max_total_time) {
+                max_total_time = initial_profiles[i].Total;
             }
+        }
+
+        // Prevent division by zero if the robot is already at the goal position
+        if (max_total_time <= 0.0) {
+            return;
+        }
+
+        // Pass 2: Linearly scale down kinematics for faster joints to synchronize execution
+        std::array<Phases, NUM_JOINTS> synchronized_profiles;
+        std::array<double, NUM_JOINTS> Vmax_scaled = Vmax_orig;
+        std::array<double, NUM_JOINTS> Amax_scaled = Amax_orig;
+        std::array<double, NUM_JOINTS> Jmax_scaled = Jmax_orig;
+
+        for (int i = 0; i < NUM_JOINTS; ++i) {
+            double t_initial = initial_profiles[i].Total;
+            if (t_initial > 0.0 && t_initial < max_total_time) {
+                // Time-scaling factor for the S-Curve profile
+                double scale_factor = t_initial / max_total_time;
+                
+                // Kinematics scale proportionally to the S-curve duration components:
+                // Velocity scales by factor^1, Acceleration by factor^2, Jerk by factor^3
+                Vmax_scaled[i] = Vmax_orig[i] * scale_factor;
+                Amax_scaled[i] = Amax_orig[i] * (scale_factor * scale_factor);
+                Jmax_scaled[i] = Jmax_orig[i] * (scale_factor * scale_factor * scale_factor);
+            }
+            // Re-solve profiles using the scaled kinematic limits
+            synchronized_profiles[i] = CalculatePhases(distances[i], Vmax_scaled[i], Amax_scaled[i], Jmax_scaled[i]);
         }
 
         // Add a t=0 starting point to ensure tracking controllers initialise from a stable state
@@ -209,15 +237,15 @@ private:
         start_point.accelerations = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         smooth_msg.points.push_back(start_point);
 
-        // Sample the synchronous pathway at 100Hz frequency intervals (dt = 0.01 seconds)
+        // Sample the synchronized pathways at 100Hz frequency intervals (dt = 0.01 seconds)
         double dt = 0.01;
-        for (double t = dt; t <= max_total_time; t += dt) {
+        for (double t = dt; t <= max_total_time + 1e-4; t += dt) { // Added epsilon safeguard for loop boundary
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
 
             for (int i = 0; i < NUM_JOINTS; ++i) {
-                Input in{Vmax[i], Amax[i], Jmax[i], t, current_positions[i], goal_positions[i], 16.0, 10.0};
-                Output state = Evaluate(in, profiles[i]);
+                Input in{Vmax_scaled[i], Amax_scaled[i], Jmax_scaled[i], t, current_positions[i], goal_positions[i], 16.0, 10.0};
+                Output state = Evaluate(in, synchronized_profiles[i]);
                 point.positions.push_back(state.X);
                 point.velocities.push_back(state.V);
                 point.accelerations.push_back(state.A);
