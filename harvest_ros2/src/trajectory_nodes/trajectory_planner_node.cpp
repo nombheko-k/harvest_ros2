@@ -207,28 +207,6 @@ private:
             return;
         }
 
-        // Pass 2: Linearly scale down kinematics for faster joints to synchronize execution
-        std::array<Phases, NUM_JOINTS> synchronized_profiles;
-        std::array<double, NUM_JOINTS> Vmax_scaled = Vmax_orig;
-        std::array<double, NUM_JOINTS> Amax_scaled = Amax_orig;
-        std::array<double, NUM_JOINTS> Jmax_scaled = Jmax_orig;
-
-        for (int i = 0; i < NUM_JOINTS; ++i) {
-            double t_initial = initial_profiles[i].Total;
-            if (t_initial > 0.0 && t_initial < max_total_time) {
-                // Time-scaling factor for the S-Curve profile
-                double scale_factor = t_initial / max_total_time;
-                
-                // Kinematics scale proportionally to the S-curve duration components:
-                // Velocity scales by factor^1, Acceleration by factor^2, Jerk by factor^3
-                Vmax_scaled[i] = Vmax_orig[i] * scale_factor;
-                Amax_scaled[i] = Amax_orig[i] * (scale_factor * scale_factor);
-                Jmax_scaled[i] = Jmax_orig[i] * (scale_factor * scale_factor * scale_factor);
-            }
-            // Re-solve profiles using the scaled kinematic limits
-            synchronized_profiles[i] = CalculatePhases(distances[i], Vmax_scaled[i], Amax_scaled[i], Jmax_scaled[i]);
-        }
-
         // Add a t=0 starting point to ensure tracking controllers initialise from a stable state
         auto start_point = trajectory_msgs::msg::JointTrajectoryPoint();
         start_point.time_from_start = rclcpp::Duration::from_seconds(0.0);
@@ -237,18 +215,31 @@ private:
         start_point.accelerations = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         smooth_msg.points.push_back(start_point);
 
-        // Sample the synchronized pathways at 100Hz frequency intervals (dt = 0.01 seconds)
-        double dt = 0.01;
-        for (double t = dt; t <= max_total_time + 1e-4; t += dt) { // Added epsilon safeguard for loop boundary
+        // Sample the synchronised pathways at 500Hz frequency intervals (dt = 0.002 seconds)
+        double dt = 0.002;
+        for (double t = dt; t <= max_total_time + 1e-4; t += dt) { 
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
 
             for (int i = 0; i < NUM_JOINTS; ++i) {
-                Input in{Vmax_scaled[i], Amax_scaled[i], Jmax_scaled[i], t, current_positions[i], goal_positions[i], 16.0, 10.0};
-                Output state = Evaluate(in, synchronized_profiles[i]);
+                double t_initial = initial_profiles[i].Total;
+                double t_scaled = t;
+
+                // If this joint is faster, stretch its virtual clock to match the slow joint
+                if (max_total_time > 0.0 && t_initial > 0.0) {
+                    t_scaled = t * (t_initial / max_total_time);
+                }
+
+                // Evaluate using the original, mathematically stable unscaled profile limits
+                Input in{Vmax_orig[i], Amax_orig[i], Jmax_orig[i], t_scaled, current_positions[i], goal_positions[i], 16.0, 10.0};
+                Output state = Evaluate(in, initial_profiles[i]);
+
+                // When reading out the derivatives, we must scale them back to real-world time space
+                double time_stretch_factor = t_initial / max_total_time;
+
                 point.positions.push_back(state.X);
-                point.velocities.push_back(state.V);
-                point.accelerations.push_back(state.A);
+                point.velocities.push_back(state.V * time_stretch_factor);
+                point.accelerations.push_back(state.A * (time_stretch_factor * time_stretch_factor));
             }
             smooth_msg.points.push_back(point);
         }

@@ -8,10 +8,11 @@ controller_manager:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     # Controls all 6 degrees of freedom as a grouped trajectory segment
-    arm_controller:
-      type: joint_trajectory_controller/JointTrajectoryController
+    # Change type to an effort commander group if sending calculated math feeds directly
+    effort_controller:
+      type: effort_controllers/JointGroupEffortController
 
-arm_controller:
+effort_controller:
   ros__parameters:
     joints:
       - rail_joint
@@ -40,9 +41,9 @@ arm_controller:
     # Updated 
     gains:
       # Best results after manual tuning
-      rail_joint:        {p: 1200.0, i: 5.0, d: 50.0}
-      base_joint:        {p: 20.0, i: 0.0, d: 2.0} # accurate
-      shoulder_joint:    {p: 80.0, i: 0.1, d: 4.0, i_clamp: 1.5}
-      elbow_joint:       {p: 60.0, i: 0.05, d: 3.0, i_clamp: 0.5}
-      wrist_pitch_joint: {p: 12.0, i: 0.0, d: 1.0}
-      wrist_roll_joint:  {p: 10.0, i: 0.0, d: 1.0}
+      rail_joint:        {p: 1200.0, i: 5.0, d: 50.0, i_clamp: 10}
+      base_joint:        {p: 80.0, i: 0.13, d: 5.33, i_clamp: 1.0} # accurate
+      shoulder_joint:    {p: 200.0, i: 2.67, d: 10.67, i_clamp: 4.5}
+      elbow_joint:       {p: 133.33, i: 1.33, d: 8.0, i_clamp: 3.5}
+      wrist_pitch_joint: {p: 33.33, i: 0.67, d: 2.0, i_clamp: 1.0}
+      wrist_roll_joint:  {p: 6.67, i: 0.01, d: 0.27, i_clamp: 0.5}

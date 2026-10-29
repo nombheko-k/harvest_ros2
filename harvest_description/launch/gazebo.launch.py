@@ -88,10 +88,10 @@ def generate_launch_description():
         output='screen',
     )
 
-    arm_controller_spawner = Node(
+    effort_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['arm_controller'],
+        arguments=['effort_controller'],
         output='screen',
     )
 
@@ -101,6 +101,17 @@ def generate_launch_description():
         executable='trajectory_planner_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    gravity_compensation_node = Node(
+    package='harvest_ros2',
+    executable='gravity_compensation_node',
+    output='screen',
+    parameters=[{
+        'shoulder_max_gravity_torque': 3.92, # Calibrate this based on actual arm weight
+        'shoulder_effort_limit': 5.60,
+        'use_sim_time': use_sim_time
+    }]
     )
 
     # Pass sim time to your IK Node
@@ -119,10 +130,10 @@ def generate_launch_description():
         )
     )
 
-    delay_arm_controller_after_broadcaster = RegisterEventHandler(
+    delay_effort_controller_after_broadcaster = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
-            on_exit=[arm_controller_spawner],
+            on_exit=[effort_controller_spawner],
         )
     )
 
@@ -134,7 +145,8 @@ def generate_launch_description():
         clock_bridge,
         spawn_robot,
         trajectory_planner_node,  # Added explicit launch execution
+        gravity_compensation_node,
         ik_node,                  # Added explicit launch execution
         delay_broadcaster_after_spawn,
-        delay_arm_controller_after_broadcaster
+        delay_effort_controller_after_broadcaster
     ])

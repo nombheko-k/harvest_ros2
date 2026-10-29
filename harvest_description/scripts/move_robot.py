@@ -43,7 +43,7 @@ class HarvesterController(Node):
             point = JointTrajectoryPoint()
             # Test position targets
             point.positions = [0.200, 1.203, -0.095, 1.415, 0.251, 1.570]
-            point.time_from_start = Duration(sec=6, nanosec=0) # Take 6 seconds
+            point.time_from_start = Duration(sec=4, nanosec=0) # Take 4 seconds
 
             msg.points = [point]
             self.publisher_.publish(msg)
