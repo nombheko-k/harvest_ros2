@@ -5,9 +5,12 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
@@ -38,17 +41,36 @@ bool inside_range(double value, double lower, double upper)
 }
 }  // namespace
 
+// enum definition for the harvest state machine
+enum class HarvestState {
+  TRACKING_TARGET,
+  READY_TO_TWIST,
+  TWISTING,
+  HARVEST_COMPLETE 
+};
+
 class UniversalWristIKNode : public rclcpp::Node
 {
 public:
+  HarvestState current_state_ = HarvestState::TRACKING_TARGET;
+  bool has_target_ = false; // safety latch
+  std::vector<double> target_joints_ = {0.0, 0.0, 0.0, 0.0, 0.0}; // rail, base, shoulder, elbow, pitch
+
   UniversalWristIKNode() : Node("ik_node")
   {
     target_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       "/harvest_target_pose", 10,
       std::bind(&UniversalWristIKNode::target_callback, this, std::placeholders::_1));
+
+    // Subscribe to current joint states to verify when we reach the target
+    joint_sub_ = create_subscription<sensor_msgs::msg::JointState>(
+      "/joint_states", 10,
+      std::bind(&UniversalWristIKNode::joint_callback, this, std::placeholders::_1));
+
     trajectory_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
-    "/ik_node/raw_joint_targets", 10);
-    RCLCPP_INFO(get_logger(), "IK node started for harvest arm.");
+      "/ik_node/raw_joint_targets", 10);
+
+    RCLCPP_INFO(get_logger(), "IK Node started with active Harvest State Machine.");
   }
 
 private:
@@ -67,8 +89,8 @@ private:
     const double relative_x = target_x - rail_position; 
 
     // Because the tool is offset in Y, the arm's radial plane does not intersect the target directly.
-    const double target_radius_sq = relative_x * relative_x + target_y * target_y; // This is the horizontal distance from the wrist centre (target) to the base
-    const double y_offset_sq = toolYOffset * toolYOffset; // Calculating the offset
+    const double target_radius_sq = relative_x * relative_x + target_y * target_y;
+    const double y_offset_sq = toolYOffset * toolYOffset;
 
     if (target_radius_sq < y_offset_sq) {
       RCLCPP_ERROR(get_logger(), "Target is too close to the yaw axis; unreachable due to Y-offset.");
@@ -79,9 +101,9 @@ private:
     const double planar_radius = std::sqrt(target_radius_sq - y_offset_sq);
     
     // Adjust the base yaw to compensate for the tool's lateral Y-offset
-    const double base_angle = std::atan2(target_y, relative_x) - std::atan2(toolYOffset, planar_radius); // calculate base angle, and subtract offset
+    const double base_angle = std::atan2(target_y, relative_x) - std::atan2(toolYOffset, planar_radius);
 
-    const double wrist_radius = planar_radius - toolXOffset * std::sin(desiredToolPitch); // Calculate the wrist centre
+    const double wrist_radius = planar_radius - toolXOffset * std::sin(desiredToolPitch);
     const double wrist_z = target_z - baseHeight - toolXOffset * std::cos(desiredToolPitch);
 
     const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z;
@@ -91,24 +113,24 @@ private:
     if (cos_elbow < -1.0 - 1e-9 || cos_elbow > 1.0 + 1e-9) {
       RCLCPP_ERROR(get_logger(), "Target is outside the arm's reachable radial workspace.");
       return;
-    } // Check Reachability workspace
+    }
     cos_elbow = std::clamp(cos_elbow, -1.0, 1.0);
 
     bool solution_found = false;
     double shoulder_angle = 0.0, elbow_angle = 0.0, wrist_angle = 0.0;
 
-    for (const double elbow_sign : std::array<double, 2>{1.0, -1.0}) { // checking +- sign for elbow joint
+    for (const double elbow_sign : std::array<double, 2>{1.0, -1.0}) {
       const double try_elbow = elbow_sign * std::acos(cos_elbow);
       const double try_shoulder =
         std::atan2(wrist_radius, wrist_z) -
         std::atan2(forearmLength * std::sin(try_elbow),
-                   upperArmLength + forearmLength * std::cos(try_elbow)); // calculate shoulder joint angle
+                   upperArmLength + forearmLength * std::cos(try_elbow));
                    
-      const double try_wrist = desiredToolPitch - try_shoulder - try_elbow; // wrist joint angle
+      const double try_wrist = desiredToolPitch - try_shoulder - try_elbow;
 
-      // URDF limits matching the new model
-      if (inside_range(try_shoulder, -1.5708, 1.5708) && // 180 degrees
-          inside_range(try_elbow, -2.0, 2.0) && // 215 degrees
+      // URDF limits matching model
+      if (inside_range(try_shoulder, -1.5708, 1.5708) &&
+          inside_range(try_elbow, -2.0, 2.0) &&
           inside_range(try_wrist, -1.5708, 1.5708))
       {
         shoulder_angle = try_shoulder;
@@ -124,7 +146,11 @@ private:
       return;
     }
 
-    // print target pose and robot joint angles
+    // Update internal state and target cache for tracking
+    target_joints_ = {rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle};
+    has_target_ = true;
+    current_state_ = HarvestState::TRACKING_TARGET;
+
     send_trajectory_point(rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle);
     RCLCPP_INFO(get_logger(),
       "IK target (%.3f, %.3f, %.3f); joints (%.3f, %.3f, %.3f, %.3f, %.3f)",
@@ -133,7 +159,8 @@ private:
 
   void send_trajectory_point(
     double rail_position, double base_angle, double shoulder_angle,
-    double elbow_angle, double wrist_angle)
+    double elbow_angle, double wrist_pitch, double wrist_roll = 0.0,
+    double duration_sec = 4.0)
   {
     trajectory_msgs::msg::JointTrajectory trajectory;
     trajectory.header.stamp = now();
@@ -142,12 +169,64 @@ private:
       "wrist_pitch_joint", "wrist_roll_joint"};
 
     trajectory_msgs::msg::JointTrajectoryPoint point;
-    point.positions = {rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle, 0.0};
-    point.time_from_start = rclcpp::Duration::from_seconds(4.0);
+    point.positions = {rail_position, base_angle, shoulder_angle, elbow_angle, wrist_pitch, wrist_roll};
+    point.time_from_start = rclcpp::Duration::from_seconds(duration_sec);
     trajectory.points.push_back(point);
     trajectory_pub_->publish(trajectory);
   }
 
+  void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
+  {
+    if (!has_target_ || current_state_ != HarvestState::TRACKING_TARGET) return;
+
+    // Map joint names to their current positions
+    std::unordered_map<std::string, double> current_positions;
+    for (size_t i = 0; i < msg->name.size(); ++i) {
+      if (i < msg->position.size()) {
+        current_positions[msg->name[i]] = msg->position[i];
+      }
+    }
+
+    // Define the joint order matching target_joints_
+    std::vector<std::string> joint_names = {
+      "rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint"};
+
+    bool target_reached = true;
+    constexpr double kPosTolerance = 0.02;
+
+    for (size_t i = 0; i < joint_names.size(); ++i) {
+      if (current_positions.find(joint_names[i]) == current_positions.end()) {
+        target_reached = false;
+        break;
+      }
+      const double error = std::abs(current_positions[joint_names[i]] - target_joints_[i]);
+      if (error > kPosTolerance) {
+        target_reached = false;
+        break;
+      }
+    }
+
+    // Trigger Sequence: Target Locked and Reached
+    if (target_reached) {
+      current_state_ = HarvestState::READY_TO_TWIST;
+      RCLCPP_INFO(get_logger(), "Target Locked and Reached. Activating harvest twist sequence!");
+      execute_harvest_twist();
+    }
+  }
+
+  void execute_harvest_twist()
+  {
+    current_state_ = HarvestState::TWISTING;
+
+    send_trajectory_point(
+      target_joints_[0], target_joints_[1], target_joints_[2],
+      target_joints_[3], target_joints_[4], kPi / 2.0, 1.5);
+
+    current_state_ = HarvestState::HARVEST_COMPLETE;
+    RCLCPP_INFO(get_logger(), "Harvest twist action commanded.");
+  }
+
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_sub_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_pub_;
 };
