@@ -177,7 +177,9 @@ private:
 
   void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
   {
-    if (!has_target_ || current_state_ != HarvestState::TRACKING_TARGET) return;
+    if (!has_target_ ||
+        (current_state_ != HarvestState::TRACKING_TARGET &&
+         current_state_ != HarvestState::TWISTING)) return;
 
     // Map joint names to their current positions
     std::unordered_map<std::string, double> current_positions;
@@ -191,26 +193,37 @@ private:
     std::vector<std::string> joint_names = {
       "rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint"};
 
-    bool target_reached = true;
-    constexpr double kPosTolerance = 0.02;
+    constexpr double kPosTolerance = 0.02; // 2cm tolerance
 
-    for (size_t i = 0; i < joint_names.size(); ++i) {
-      if (current_positions.find(joint_names[i]) == current_positions.end()) {
-        target_reached = false;
-        break;
+    if (current_state_ == HarvestState::TRACKING_TARGET) {
+      bool target_reached = true;
+      for (size_t i = 0; i < joint_names.size(); ++i) {
+        auto current = current_positions.find(joint_names[i]);
+        if (current == current_positions.end()) {
+          target_reached = false;
+          break;
+        }
+        const double error = std::abs(current->second - target_joints_[i]);
+        if (error > kPosTolerance) {
+          target_reached = false;
+          break;
+        }
       }
-      const double error = std::abs(current_positions[joint_names[i]] - target_joints_[i]);
-      if (error > kPosTolerance) {
-        target_reached = false;
-        break;
-      }
-    }
 
-    // Trigger Sequence: Target Locked and Reached
-    if (target_reached) {
-      current_state_ = HarvestState::READY_TO_TWIST;
-      RCLCPP_INFO(get_logger(), "Target Locked and Reached. Activating harvest twist sequence!");
-      execute_harvest_twist();
+      // Start the twist only after feedback confirms the target pose was reached.
+      if (target_reached) {
+        current_state_ = HarvestState::READY_TO_TWIST;
+        RCLCPP_INFO(get_logger(), "Target Locked and Reached. Activating harvest twist sequence!");
+        execute_harvest_twist();
+      }
+    } else if (current_state_ == HarvestState::TWISTING) {
+      constexpr double kTwistTolerance = 0.02;
+      const auto wrist_roll = current_positions.find("wrist_roll_joint");
+      if (wrist_roll != current_positions.end() &&
+          std::abs(wrist_roll->second - kPi / 2.0) <= kTwistTolerance) {
+        current_state_ = HarvestState::HARVEST_COMPLETE;
+        RCLCPP_INFO(get_logger(), "Harvest twist reached its commanded wrist-roll target.");
+      }
     }
   }
 
@@ -222,8 +235,8 @@ private:
       target_joints_[0], target_joints_[1], target_joints_[2],
       target_joints_[3], target_joints_[4], kPi / 2.0, 1.5);
 
-    current_state_ = HarvestState::HARVEST_COMPLETE;
-    RCLCPP_INFO(get_logger(), "Harvest twist action commanded.");
+    // Keep monitoring joint feedback; publishing a command is not proof of completion.
+    RCLCPP_INFO(get_logger(), "Harvest twist action commanded; waiting for wrist-roll feedback.");
   }
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;

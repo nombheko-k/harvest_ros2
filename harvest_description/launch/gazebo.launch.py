@@ -108,8 +108,8 @@ def generate_launch_description():
     executable='gravity_compensation_node',
     output='screen',
     parameters=[{
-        'shoulder_max_gravity_torque': 3.92, # Calibrate this based on actual arm weight
-        'shoulder_effort_limit': 5.60,
+        'shoulder_max_gravity_torque': 15.0, # Calibrate this based on actual arm weight
+        'shoulder_effort_limit': 30.0,
         'use_sim_time': use_sim_time
     }]
     )

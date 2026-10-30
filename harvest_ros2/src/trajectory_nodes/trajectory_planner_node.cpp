@@ -48,6 +48,7 @@ public:
 
         // Clear local tracking variables to avoid uninitialized memory hazards
         latest_joint_positions_.fill(0.0);
+        joint_state_seen_.fill(false);
 
         RCLCPP_INFO(this->get_logger(), "7-Phase S-Curve Joint Trajectory Node is online.");
     }
@@ -154,6 +155,7 @@ private:
                 size_t index = std::distance(msg->name.begin(), it);
                 if (index < msg->position.size()) {
                     latest_joint_positions_[i] = msg->position[index];
+                    joint_state_seen_[i] = true;
                 }
             }
         }
@@ -162,8 +164,9 @@ private:
         // Orchestrates path generation when a new endpoint goal layout is requested
     void ik_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr raw_msg) {
         if (raw_msg->points.empty()) return;
-        if (raw_msg->points[0].positions.size() < 6) {
-            RCLCPP_WARN(this->get_logger(), "Incoming IK message has fewer than 6 joints. Processing fallback.");
+        if (!std::all_of(joint_state_seen_.begin(), joint_state_seen_.end(), [](bool seen) { return seen; })) {
+            RCLCPP_WARN(this->get_logger(), "Waiting for feedback for all six joints before planning.");
+            return;
         }
 
         // Set up the outbound container structures
@@ -182,11 +185,22 @@ private:
         std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
         std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-        // Extract raw targets safely up to the available capacity limit
+        // Resolve each IK target by joint name so message order cannot silently retarget axes.
         for (size_t i = 0; i < NUM_JOINTS; ++i) {
-            if (i < raw_msg->points[0].positions.size()) {
-                goal_positions[i] = raw_msg->points[0].positions[i];
+            auto target_joint = std::find(raw_msg->joint_names.begin(), raw_msg->joint_names.end(),
+                                          smooth_msg.joint_names[i]);
+            if (target_joint == raw_msg->joint_names.end()) {
+                RCLCPP_ERROR(this->get_logger(), "Incoming IK target is missing joint '%s'.",
+                             smooth_msg.joint_names[i].c_str());
+                return;
             }
+            const size_t target_index = std::distance(raw_msg->joint_names.begin(), target_joint);
+            if (target_index >= raw_msg->points[0].positions.size()) {
+                RCLCPP_ERROR(this->get_logger(), "Incoming IK target has no position for joint '%s'.",
+                             smooth_msg.joint_names[i].c_str());
+                return;
+            }
+            goal_positions[i] = raw_msg->points[0].positions[target_index];
         }
 
         // Pass 1: Calculate original unscaled profiles to find the longest execution time
@@ -215,9 +229,10 @@ private:
         start_point.accelerations = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         smooth_msg.points.push_back(start_point);
 
-        // Sample the synchronised pathways at 500Hz frequency intervals (dt = 0.002 seconds)
-        double dt = 0.002;
-        for (double t = dt; t <= max_total_time + 1e-4; t += dt) { 
+        // Sample the synchronised pathways at 1000Hz frequency intervals (dt = 0.001 seconds).
+        // Append the exact endpoint separately below because max_total_time may not align to dt.
+        double dt = 0.001;
+        for (double t = dt; t < max_total_time; t += dt) {
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
 
@@ -244,11 +259,19 @@ private:
             smooth_msg.points.push_back(point);
         }
 
-        // Force zero velocity and acceleration constraints on the final element to stop cleanly at the goal
+        // Send the requested joint positions at the profile's exact finish time, not the last 2 ms sample.
+        auto final_point = trajectory_msgs::msg::JointTrajectoryPoint();
+        final_point.time_from_start = rclcpp::Duration::from_seconds(max_total_time);
+        final_point.positions.assign(goal_positions.begin(), goal_positions.end());
+        final_point.velocities.assign(NUM_JOINTS, 0.0);
+        final_point.accelerations.assign(NUM_JOINTS, 0.0);
+        smooth_msg.points.push_back(final_point);
+
+        // The final point is the authoritative stop target, so hold its zero derivatives explicitly.
         if (!smooth_msg.points.empty()) {
-            auto & final_point = smooth_msg.points.back();
-            std::fill(final_point.velocities.begin(), final_point.velocities.end(), 0.0);
-            std::fill(final_point.accelerations.begin(), final_point.accelerations.end(), 0.0);
+            auto & last_point = smooth_msg.points.back();
+            std::fill(last_point.velocities.begin(), last_point.velocities.end(), 0.0);
+            std::fill(last_point.accelerations.begin(), last_point.accelerations.end(), 0.0);
         }
         
         smooth_trajectory_pub_->publish(smooth_msg);
@@ -260,6 +283,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
     rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr smooth_trajectory_pub_;
     std::array<double, NUM_JOINTS> latest_joint_positions_;
+    std::array<bool, NUM_JOINTS> joint_state_seen_;
 };
 
 // Node deployment

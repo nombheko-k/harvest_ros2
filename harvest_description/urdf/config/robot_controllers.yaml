@@ -41,9 +41,12 @@ effort_controller:
     # Updated 
     gains:
       # Best results after manual tuning
-      rail_joint:        {p: 1200.0, i: 5.0, d: 50.0, i_clamp: 10}
-      base_joint:        {p: 80.0, i: 0.13, d: 5.33, i_clamp: 1.0} # accurate
-      shoulder_joint:    {p: 200.0, i: 2.67, d: 10.67, i_clamp: 4.5}
-      elbow_joint:       {p: 133.33, i: 1.33, d: 8.0, i_clamp: 3.5}
-      wrist_pitch_joint: {p: 33.33, i: 0.67, d: 2.0, i_clamp: 1.0}
-      wrist_roll_joint:  {p: 6.67, i: 0.01, d: 0.27, i_clamp: 0.5}
+      rail_joint:        {p: 1200.0, i: 10.0, d: 50.0, i_clamp: 10.0}
+      base_joint:        {p: 80.0, i: 0.0, d: 0.0, i_clamp: 0.0} # accurate
+      shoulder_joint:    {p: 150.0, i: 15.0, d: 1.0, i_clamp:  15.0} # reduce i and d gains to improve accuracy and reduce oscillations
+      elbow_joint:       {p: 100.0, i: 10.0, d: 1.0, i_clamp: 10.0} # increasing d too high causes jitter
+      wrist_pitch_joint: {p: 50.0, i: 5.0, d: 0.5, i_clamp: 5.0} # increasing i gain too high causes overshoot
+      wrist_roll_joint:  {p: 10.0, i: 0.0, d: 0.0, i_clamp: 0.0}
+      
+      # we zeroed the i gains to reduce integral windup, the shoulder joint still overshoots
+      # we changed the gc calc of shoulder joint to read desired stated instead of actual states.
