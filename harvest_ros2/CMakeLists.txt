@@ -11,6 +11,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(ros_gz_interfaces REQUIRED)
 
 # Forward Kinematics Node
 add_executable(fk_node src/kinematics_nodes/fk_node.cpp)
@@ -28,11 +29,15 @@ ament_target_dependencies(trajectory_planner_node rclcpp trajectory_msgs builtin
 add_executable(gravity_compensation_node src/feedforward/gravity_compensation_node.cpp)
 ament_target_dependencies(gravity_compensation_node rclcpp builtin_interfaces trajectory_msgs sensor_msgs std_msgs)
 
+add_executable(crop_simulator_node src/simulation/crop_simulator_node.cpp)
+ament_target_dependencies(crop_simulator_node rclcpp geometry_msgs ros_gz_interfaces)
+
 install(TARGETS
   fk_node
   ik_node
   trajectory_planner_node
   gravity_compensation_node
+  crop_simulator_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

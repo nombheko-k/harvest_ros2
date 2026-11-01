@@ -61,10 +61,12 @@ def generate_launch_description():
     )
 
     # Clock bridge to sync physics engine and controller_manager
+    # Updated Bridge: Syncs both simulation clock AND handles the 720p 60FPS video stream pipeline
     clock_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+                   '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image'], # <-- Maps the optical data frame
         output='screen'
     )
 
