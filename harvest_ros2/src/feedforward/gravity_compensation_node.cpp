@@ -31,24 +31,24 @@ public:
 
         // Shoulder
         this->declare_parameter<double>("shoulder.kp", 150.0); 
-        this->declare_parameter<double>("shoulder.ki", 15.0); 
-        this->declare_parameter<double>("shoulder.kd", 1.0); 
+        this->declare_parameter<double>("shoulder.ki", 1.0); 
+        this->declare_parameter<double>("shoulder.kd", 5.0); 
         this->declare_parameter<double>("shoulder.i_clamp", 15.0); 
         this->declare_parameter<double>("shoulder.limit", 30.0);
         this->declare_parameter<double>("shoulder.max_gravity", 0.0); // Disabled
 
         // Elbow
         this->declare_parameter<double>("elbow.kp", 100.0);  
-        this->declare_parameter<double>("elbow.ki", 10.0); 
-        this->declare_parameter<double>("elbow.kd", 1.0);    
+        this->declare_parameter<double>("elbow.ki", 1.0); 
+        this->declare_parameter<double>("elbow.kd", 4.0);    
         this->declare_parameter<double>("elbow.i_clamp", 10.0);  
         this->declare_parameter<double>("elbow.limit", 15.0);
         this->declare_parameter<double>("elbow.max_gravity", 0.0); // Disabled
         
         // Wrist pitch
         this->declare_parameter<double>("wrist_p.kp", 50.0); 
-        this->declare_parameter<double>("wrist_p.ki", 5.0);
-        this->declare_parameter<double>("wrist_p.kd", 0.5);   
+        this->declare_parameter<double>("wrist_p.ki", 0.5);
+        this->declare_parameter<double>("wrist_p.kd", 2.0);   
         this->declare_parameter<double>("wrist_p.i_clamp", 5.0);
         this->declare_parameter<double>("wrist_p.limit", 10.0);
         this->declare_parameter<double>("wrist_p.max_gravity", 0.0); // Disabled
@@ -78,8 +78,8 @@ public:
 
         effort_pub_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/effort_controller/commands", 10);
 
-        // Change from 2ms to 1ms (1000Hz) or 0.5ms (2000Hz) to match the update_rate
-        timer_ = this->create_wall_timer(std::chrono::milliseconds(1), std::bind(&CompletePIDGravityController::controlLoop, this));
+        // Change to 200Hz 
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(5), std::bind(&CompletePIDGravityController::controlLoop, this));
 
         trajectory_active_ = false;
         last_time_ = this->now();
@@ -124,8 +124,33 @@ private:
             double interpolation = 0.0;
 
             const auto & points = active_trajectory_.points;
-            if (elapsed_time >= rclcpp::Duration(points.back().time_from_start).seconds()) {
+            if (elapsed_time >=
+                rclcpp::Duration(points.back().time_from_start).seconds())
+            {
                 lower_idx = upper_idx = points.size() - 1;
+
+                // Ensure final trajectory point is held exactly
+                for (size_t j = 0; j < joint_names_.size(); ++j)
+                {
+                    auto it = std::find(
+                        active_trajectory_.joint_names.begin(),
+                        active_trajectory_.joint_names.end(),
+                        joint_names_[j]);
+
+                    if (it != active_trajectory_.joint_names.end())
+                    {
+                        size_t idx =
+                            std::distance(active_trajectory_.joint_names.begin(), it);
+
+                        if (idx < points.back().positions.size())
+                        {
+                            target_positions_[j] =
+                                points.back().positions[idx];
+                        }
+
+                        target_velocities_[j] = 0.0;
+                    }
+                }
             } else if (elapsed_time > rclcpp::Duration(points.front().time_from_start).seconds()) {
                 for (size_t i = 1; i < points.size(); ++i) {
                     const double upper_time = rclcpp::Duration(points[i].time_from_start).seconds();
@@ -216,11 +241,16 @@ private:
             }
 
             // NATIVE ROS2 INTEGRAL ERRORS WINDUP PROTECTION HANDLING 
-            double deadband_tolerance = 0.002; // Tighten accuracy requirement to ~0.1 degrees
+            double deadband_tolerance = 0.005; // Tighten accuracy requirement to ~0.1 degrees
             
             // Accumulate integral error to pull the joint to the exact target
-            if (std::abs(pos_error) > deadband_tolerance) {
+            if (std::abs(pos_error) > deadband_tolerance)
+            {
                 integral_errors_[i] += pos_error * dt;
+            }
+            else
+            {
+                integral_errors_[i] *= 0.99;
             }
             // Once inside the deadband, integral_errors_[i] remains untouched so it 
             // permanently applies the exact torque needed to hold the arm against gravity.
@@ -232,8 +262,50 @@ private:
             effort_msg.data[i] = std::clamp(raw_effort, -limit, limit);
         }
 
+        if (trajectory_active_)
+        {
+            bool all_joints_settled = true;
+
+            constexpr double settle_position_tol = 0.005;
+            constexpr double settle_velocity_tol = 0.01;
+
+            for (size_t i = 0; i < joint_names_.size(); ++i)
+            {
+                double pos_error =
+                    std::abs(target_positions_[i] - current_positions_[i]);
+
+                double vel =
+                    std::abs(current_velocities_[i]);
+
+                if (pos_error > settle_position_tol ||
+                    vel > settle_velocity_tol)
+                {
+                    all_joints_settled = false;
+                    break;
+                }
+            }
+
+            if (all_joints_settled)
+            {
+                settled_counter_++;
+            }
+            else
+            {
+                settled_counter_ = 0;
+            }
+
+            if (settled_counter_ >= 250)
+            {
+                trajectory_active_ = false;
+                settled_counter_ = 0;
+
+                RCLCPP_INFO(
+                    this->get_logger(),
+                    "Trajectory completed. Arm settled and locked.");
+            }
+        }
         effort_pub_->publish(effort_msg);
-    }
+}
 
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
     rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_sub_;
@@ -250,6 +322,7 @@ private:
     rclcpp::Time trajectory_start_time_;
     rclcpp::Time last_time_;
     bool trajectory_active_;
+    int settled_counter_ = 0;
 };
 
 int main(int argc, char * argv[])

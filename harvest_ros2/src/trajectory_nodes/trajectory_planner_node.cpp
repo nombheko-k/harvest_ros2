@@ -231,7 +231,7 @@ private:
 
         // Sample the synchronised pathways at 1000Hz frequency intervals (dt = 0.001 seconds).
         // Append the exact endpoint separately below because max_total_time may not align to dt.
-        double dt = 0.001;
+        double dt = 0.002; // gives 1000 Hz
         for (double t = dt; t < max_total_time; t += dt) {
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
