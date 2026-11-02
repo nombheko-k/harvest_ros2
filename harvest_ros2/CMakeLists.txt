@@ -19,7 +19,7 @@ ament_target_dependencies(fk_node rclcpp sensor_msgs geometry_msgs)
 
 # Inverse Kinematics Node
 add_executable(ik_node src/kinematics_nodes/ik_node.cpp)
-ament_target_dependencies(ik_node rclcpp geometry_msgs trajectory_msgs sensor_msgs)
+ament_target_dependencies(ik_node rclcpp geometry_msgs trajectory_msgs sensor_msgs std_msgs)
 
 # Trajectory Planner Executable
 add_executable(trajectory_planner_node src/trajectory_nodes/trajectory_planner_node.cpp)
@@ -30,7 +30,9 @@ add_executable(gravity_compensation_node src/feedforward/gravity_compensation_no
 ament_target_dependencies(gravity_compensation_node rclcpp builtin_interfaces trajectory_msgs sensor_msgs std_msgs)
 
 add_executable(crop_simulator_node src/simulation/crop_simulator_node.cpp)
-ament_target_dependencies(crop_simulator_node rclcpp geometry_msgs ros_gz_interfaces)
+ament_target_dependencies(
+  crop_simulator_node
+  rclcpp geometry_msgs sensor_msgs std_msgs trajectory_msgs ros_gz_interfaces)
 
 install(TARGETS
   fk_node

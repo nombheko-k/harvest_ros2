@@ -32,25 +32,25 @@ public:
 
         // Shoulder
         this->declare_parameter<double>("shoulder.kp", 60.0);
-        this->declare_parameter<double>("shoulder.ki", 1.0);
-        this->declare_parameter<double>("shoulder.kd", 8.0);
-        this->declare_parameter<double>("shoulder.i_clamp", 3.0);
+        this->declare_parameter<double>("shoulder.ki", 0.5);
+        this->declare_parameter<double>("shoulder.kd", 6.0);
+        this->declare_parameter<double>("shoulder.i_clamp", 1.0);
         this->declare_parameter<double>("shoulder.limit", 30.0);
         this->declare_parameter<double>("shoulder.max_gravity", 6.95);
 
         // Elbow
         this->declare_parameter<double>("elbow.kp", 45.0);
-        this->declare_parameter<double>("elbow.ki", 0.8);
-        this->declare_parameter<double>("elbow.kd", 6.0);
-        this->declare_parameter<double>("elbow.i_clamp", 2.5);
+        this->declare_parameter<double>("elbow.ki", 0.2);
+        this->declare_parameter<double>("elbow.kd", 4.5);
+        this->declare_parameter<double>("elbow.i_clamp", 0.5);
         this->declare_parameter<double>("elbow.limit", 15.0);
         this->declare_parameter<double>("elbow.max_gravity", 3.80);
         
         // Wrist pitch
         this->declare_parameter<double>("wrist_p.kp", 30.0);
-        this->declare_parameter<double>("wrist_p.ki", 0.6);
-        this->declare_parameter<double>("wrist_p.kd", 4.0);
-        this->declare_parameter<double>("wrist_p.i_clamp", 2.0);
+        this->declare_parameter<double>("wrist_p.ki", 0.0);
+        this->declare_parameter<double>("wrist_p.kd", 3.0);
+        this->declare_parameter<double>("wrist_p.i_clamp", 0.0);
         this->declare_parameter<double>("wrist_p.limit", 10.0);
         this->declare_parameter<double>("wrist_p.max_gravity", 1.63);
 

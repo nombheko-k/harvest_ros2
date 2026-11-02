@@ -11,6 +11,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
@@ -69,6 +70,8 @@ public:
 
     trajectory_pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
       "/ik_node/raw_joint_targets", 10);
+    harvest_complete_pub_ = this->create_publisher<std_msgs::msg::Bool>(
+      "/harvest/cycle_complete", 10);
 
     RCLCPP_INFO(get_logger(), "IK Node started with active Harvest State Machine.");
   }
@@ -151,6 +154,7 @@ private:
     has_target_ = true;
     current_state_ = HarvestState::TRACKING_TARGET;
     settled_feedback_count_ = 0;
+    twist_settled_feedback_count_ = 0;
 
     send_trajectory_point(rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle);
     RCLCPP_INFO(get_logger(),
@@ -198,10 +202,10 @@ private:
     std::vector<std::string> joint_names = {
       "rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint"};
 
-    // Start the wrist twist only after the arm is accurate and no longer moving through the target.
-    constexpr double kPosTolerance = 0.002;
-    constexpr double kVelocityTolerance = 0.01;
-    constexpr int kSettledFeedbackSamples = 50;
+    // Allow realistic Gazebo tracking error while requiring low velocity before twisting.
+    constexpr double kPosTolerance = 0.01;
+    constexpr double kVelocityTolerance = 0.05;
+    constexpr int kSettledFeedbackSamples = 10;
 
     if (current_state_ == HarvestState::TRACKING_TARGET) {
       bool target_reached = true;
@@ -243,12 +247,50 @@ private:
         settled_feedback_count_ = 0;
       }
     } else if (current_state_ == HarvestState::TWISTING) {
-      constexpr double kTwistTolerance = 0.02;
-      const auto wrist_roll = current_positions.find("wrist_roll_joint");
-      if (wrist_roll != current_positions.end() &&
-          std::abs(wrist_roll->second - kPi / 2.0) <= kTwistTolerance) {
+      constexpr std::array<const char *, 6> all_joint_names = {
+        "rail_joint", "base_joint", "shoulder_joint", "elbow_joint",
+        "wrist_pitch_joint", "wrist_roll_joint"};
+      // Check the final pose with tolerances that account for simulated joint-state jitter.
+      constexpr double kPositionTolerance = 0.015;
+      constexpr double kRollTolerance = 0.05;
+      constexpr double kVelocityTolerance = 0.05;
+      constexpr int kSettledFeedbackSamples = 10;
+      bool all_joints_settled = true;
+
+      for (size_t i = 0; i < all_joint_names.size(); ++i) {
+        const auto current = current_positions.find(all_joint_names[i]);
+        const auto velocity = current_velocities.find(all_joint_names[i]);
+        if (current == current_positions.end() || velocity == current_velocities.end()) {
+          all_joints_settled = false;
+          break;
+        }
+
+        const double expected_position =
+          i < target_joints_.size() ? target_joints_[i] : kPi / 2.0;
+        const double position_tolerance = i == target_joints_.size() ?
+          kRollTolerance : kPositionTolerance;
+        if (std::abs(current->second - expected_position) > position_tolerance ||
+            std::abs(velocity->second) > kVelocityTolerance)
+        {
+          all_joints_settled = false;
+          break;
+        }
+      }
+
+      if (all_joints_settled) {
+        ++twist_settled_feedback_count_;
+      } else {
+        twist_settled_feedback_count_ = 0;
+      }
+
+      if (twist_settled_feedback_count_ >= kSettledFeedbackSamples) {
         current_state_ = HarvestState::HARVEST_COMPLETE;
-        RCLCPP_INFO(get_logger(), "Harvest twist reached its commanded wrist-roll target.");
+        std_msgs::msg::Bool completion;
+        completion.data = true;
+        harvest_complete_pub_->publish(completion);
+        RCLCPP_INFO(
+          get_logger(),
+          "Harvest cycle complete: all six joints settled after the wrist-roll twist.");
       }
     }
   }
@@ -268,7 +310,9 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_sub_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr harvest_complete_pub_;
   int settled_feedback_count_ = 0;
+  int twist_settled_feedback_count_ = 0;
 };
 
 int main(int argc, char * argv[])

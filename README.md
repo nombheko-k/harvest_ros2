@@ -48,17 +48,19 @@ Launch Gazebo with the robot, controllers, inverse kinematics, trajectory planne
 ros2 launch harvest_description gazebo.launch.py
 ```
 
-The inverse kinematics node accepts target poses on `/harvest_target_pose`. Its target frame must be `world`. Publishing a crop pose on `/crop_simulator/spawn_strawberry` spawns a visible strawberry and, after Gazebo confirms the spawn, sends that same world-frame pose to IK. Joint positions are reported on `/joint_states`.
+The inverse kinematics node accepts target poses on `/harvest_target_pose`; target frames must be `world`. By default, `crop_simulator_node` spawns a random cluster of 5-7 red strawberries in a 10 cm x 10 cm zone. The bridged camera stream on `/camera/image_raw` is used to detect red berries; each detection is published as the crop name on `/crop_simulator/berry_detected`, then that berry is harvested. After all six joints settle following the wrist twist, the simulator deletes the crop and waits for a fresh camera detection before proceeding. Publish `std_msgs/msg/Empty` on `/crop_simulator/start_cluster` to start another cluster, or set `auto_start_cluster:=false` to disable startup spawning. The legacy `/crop_simulator/spawn_strawberry` topic remains available for single crops. Joint positions are reported on `/joint_states`.
+
+To view the live camera feed, run `ros2 run rqt_image_view rqt_image_view` and select `/camera/image_raw`. Install `ros-jazzy-rqt-image-view` if the viewer is not already available.
 
 ## Nodes and topics
 
 | Node | Subscribes to | Publishes to | Purpose |
 | --- | --- | --- | --- |
 | `fk_node` | `/joint_states` | `/calculated_end_effector_pose` | Computes the end-effector pose from the named joint positions. |
-| `ik_node` | `/harvest_target_pose`, `/joint_states` | `/ik_node/raw_joint_targets` | Computes joint targets for a pose and commands a wrist-roll twist after reaching the target. |
+| `ik_node` | `/harvest_target_pose`, `/joint_states` | `/ik_node/raw_joint_targets`, `/harvest/cycle_complete` | Computes joint targets, commands a wrist-roll twist, then signals completion after six-joint settling. |
 | `trajectory_planner_node` | `/ik_node/raw_joint_targets`, `/joint_states` | `/arm_controller/joint_trajectory` | Converts joint targets into synchronized, jerk-limited trajectories. |
 | `gravity_compensation_node` | `/joint_states`, `/arm_controller/joint_trajectory` | `/effort_controller/commands` | Applies per-joint PID effort control and shoulder gravity compensation. |
-| `crop_simulator_node` | `/crop_simulator/spawn_strawberry` | `/harvest_target_pose`, Gazebo `/world/empty/create` | Spawns a visible crop at the supplied pose and forwards the world-frame target to IK. |
+| `crop_simulator_node` | `/crop_simulator/spawn_strawberry`, `/crop_simulator/start_cluster`, `/camera/image_raw`, `/harvest/cycle_complete`, `/joint_states`, `/arm_controller/joint_trajectory` | `/harvest_target_pose`, `/crop_simulator/berry_detected`, Gazebo `/world/empty/create`, `/world/empty/remove` | Detects red berries from the camera stream, sequences harvesting, deletes harvested crops, and reports clearing time and per-axis tracking errors. |
 
 PID defaults are declared by `gravity_compensation_node`; the ros2_control YAML configures the effort-command interface and does not tune this custom PID loop.
 

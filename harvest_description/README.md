@@ -58,6 +58,8 @@ The launch file starts Gazebo, bridges the simulation clock, spawns the robot, a
 ros2 launch harvest_description gazebo.launch.py use_sim_time:=false
 ```
 
+The launch uses `worlds/harvest.sdf`, which loads Gazebo's Sensors system so the robot camera publishes images.
+
 The simulation uses the controller configuration in `urdf/config/robot_controllers.yaml`.
 
 ## Repository layout
@@ -65,6 +67,7 @@ The simulation uses the controller configuration in `urdf/config/robot_controlle
 - `launch/` — RViz display and Gazebo simulation launch files.
 - `meshes/` — CAD-derived visual assets.
 - `rviz/` — RViz configuration.
+- `worlds/` — Gazebo worlds, including the simulation world with camera sensor support.
 - `urdf/mech/` — rail, arm, and gripper Xacro components.
 - `urdf/robots/` — assembled robot Xacro model.
 - `urdf/config/` — ROS 2 controller configuration.

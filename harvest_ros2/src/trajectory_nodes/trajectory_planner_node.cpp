@@ -188,10 +188,10 @@ private:
             "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"
         };
 
-        // Lowered safety thresholds to stay well within the URDF 4.0 Nm effort limit
-        std::array<double, NUM_JOINTS> Vmax_orig = {0.2, 0.5, 0.5, 0.5, 0.8, 0.8};
-        std::array<double, NUM_JOINTS> Amax_orig = {0.3, 0.8, 0.8, 0.8, 1.2, 1.2};
-        std::array<double, NUM_JOINTS> Jmax_orig = {0.6, 1.5, 1.5, 1.5, 2.5, 2.5};
+        // Stay below the URDF speed limits while avoiding unnecessarily slow crop-to-crop moves.
+        std::array<double, NUM_JOINTS> Vmax_orig = {0.4, 0.8, 0.8, 0.8, 1.0, 1.0};
+        std::array<double, NUM_JOINTS> Amax_orig = {0.6, 1.4, 1.4, 1.4, 1.8, 1.8};
+        std::array<double, NUM_JOINTS> Jmax_orig = {1.2, 3.0, 3.0, 3.0, 4.0, 4.0};
 
         std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
         std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -240,9 +240,9 @@ private:
         start_point.accelerations = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         smooth_msg.points.push_back(start_point);
 
-        // Sample the synchronised pathways at 1000Hz frequency intervals (dt = 0.001 seconds).
+        // The controller interpolates between samples, so 100 Hz is sufficient and keeps messages small.
         // Append the exact endpoint separately below because max_total_time may not align to dt.
-        double dt = 0.002; // gives 1000 Hz
+        constexpr double dt = 0.01;
         for (double t = dt; t < max_total_time; t += dt) {
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
