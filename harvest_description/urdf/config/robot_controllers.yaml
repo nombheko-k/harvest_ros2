@@ -28,25 +28,4 @@ effort_controller:
       - velocity
     open_loop_control: false # Set to false to force Gazebo to use the PID closed-loop tracking feedback
 
-    # INJECTING PID GAINS
-    # This instructs the simulator to execute corrections using your original design parameters
-    # Kp: Drives the link quickly toward the berry cluster.
-    # <-- If too low, arm will sag; if too high, violent shaking and oscillations
-    # Ki: Fights the structural gravity drop to hit precise coordinates
-    # <-- If too low, arm will stop short of the berry coordinate; if too high, unstable drifting and overshooting
-    # Kd: Smooths out acceleration so the gripper approaches softly
-    # If too low, overshooting targets and arm will jerk aggressively; if too high, joints will be too stiff and buzz loudly.  
-    # Kd << This is the most sensitive parameter to tune, so adjust carefully.
-    
-    # Updated 
-    gains:
-      # Best results after manual tuning
-      rail_joint:        {p: 1200.0, i: 10.0, d: 50.0, i_clamp: 10.0}
-      base_joint:        {p: 80.0, i: 0.0, d: 0.0, i_clamp: 0.0} # accurate
-      shoulder_joint:    {p: 150.0, i: 1.0, d: 5.0, i_clamp:  15.0} # reduce i and d gains to improve accuracy and reduce oscillations
-      elbow_joint:       {p: 100.0, i: 1.0, d: 4.0, i_clamp: 10.0} # increasing d too high causes jitter
-      wrist_pitch_joint: {p: 50.0, i: 0.5, d: 2.0, i_clamp: 5.0} # increasing i gain too high causes overshoot
-      wrist_roll_joint:  {p: 10.0, i: 0.0, d: 0.0, i_clamp: 0.0}
-      
-      # we zeroed the i gains to reduce integral windup, the shoulder joint still overshoots
-      # we changed the gc calc of shoulder joint to read desired stated instead of actual states.
+    # PID gains are applied by gravity_compensation_node, not this effort-command controller.

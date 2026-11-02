@@ -159,13 +159,24 @@ private:
                 }
             }
         }
+
+        // Preserve targets received before controller feedback is ready, then plan once all joints are known.
+        if (pending_raw_target_ &&
+            std::all_of(joint_state_seen_.begin(), joint_state_seen_.end(), [](bool seen) { return seen; }))
+        {
+            auto pending_target = std::move(pending_raw_target_);
+            ik_callback(pending_target);
+        }
     }
 
         // Orchestrates path generation when a new endpoint goal layout is requested
     void ik_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr raw_msg) {
         if (raw_msg->points.empty()) return;
         if (!std::all_of(joint_state_seen_.begin(), joint_state_seen_.end(), [](bool seen) { return seen; })) {
-            RCLCPP_WARN(this->get_logger(), "Waiting for feedback for all six joints before planning.");
+            pending_raw_target_ = raw_msg;
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Waiting for feedback for all six joints; the latest target will be planned when feedback arrives.");
             return;
         }
 
@@ -284,6 +295,7 @@ private:
     rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr smooth_trajectory_pub_;
     std::array<double, NUM_JOINTS> latest_joint_positions_;
     std::array<bool, NUM_JOINTS> joint_state_seen_;
+    trajectory_msgs::msg::JointTrajectory::SharedPtr pending_raw_target_;
 };
 
 // Node deployment

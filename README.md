@@ -48,7 +48,7 @@ Launch Gazebo with the robot, controllers, inverse kinematics, trajectory planne
 ros2 launch harvest_description gazebo.launch.py
 ```
 
-The inverse kinematics node accepts target poses on `/harvest_target_pose`. Its target frame must be `world`. Joint positions are reported on `/joint_states`.
+The inverse kinematics node accepts target poses on `/harvest_target_pose`. Its target frame must be `world`. Publishing a crop pose on `/crop_simulator/spawn_strawberry` spawns a visible strawberry and, after Gazebo confirms the spawn, sends that same world-frame pose to IK. Joint positions are reported on `/joint_states`.
 
 ## Nodes and topics
 
@@ -58,6 +58,9 @@ The inverse kinematics node accepts target poses on `/harvest_target_pose`. Its 
 | `ik_node` | `/harvest_target_pose`, `/joint_states` | `/ik_node/raw_joint_targets` | Computes joint targets for a pose and commands a wrist-roll twist after reaching the target. |
 | `trajectory_planner_node` | `/ik_node/raw_joint_targets`, `/joint_states` | `/arm_controller/joint_trajectory` | Converts joint targets into synchronized, jerk-limited trajectories. |
 | `gravity_compensation_node` | `/joint_states`, `/arm_controller/joint_trajectory` | `/effort_controller/commands` | Applies per-joint PID effort control and shoulder gravity compensation. |
+| `crop_simulator_node` | `/crop_simulator/spawn_strawberry` | `/harvest_target_pose`, Gazebo `/world/empty/create` | Spawns a visible crop at the supplied pose and forwards the world-frame target to IK. |
+
+PID defaults are declared by `gravity_compensation_node`; the ros2_control YAML configures the effort-command interface and does not tune this custom PID loop.
 
 Run the forward-kinematics node separately when needed:
 

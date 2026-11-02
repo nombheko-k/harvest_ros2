@@ -150,6 +150,7 @@ private:
     target_joints_ = {rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle};
     has_target_ = true;
     current_state_ = HarvestState::TRACKING_TARGET;
+    settled_feedback_count_ = 0;
 
     send_trajectory_point(rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle);
     RCLCPP_INFO(get_logger(),
@@ -183,9 +184,13 @@ private:
 
     // Map joint names to their current positions
     std::unordered_map<std::string, double> current_positions;
+    std::unordered_map<std::string, double> current_velocities;
     for (size_t i = 0; i < msg->name.size(); ++i) {
       if (i < msg->position.size()) {
         current_positions[msg->name[i]] = msg->position[i];
+      }
+      if (i < msg->velocity.size()) {
+        current_velocities[msg->name[i]] = msg->velocity[i];
       }
     }
 
@@ -193,10 +198,14 @@ private:
     std::vector<std::string> joint_names = {
       "rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint"};
 
-    constexpr double kPosTolerance = 0.02; // 2cm tolerance
+    // Start the wrist twist only after the arm is accurate and no longer moving through the target.
+    constexpr double kPosTolerance = 0.002;
+    constexpr double kVelocityTolerance = 0.01;
+    constexpr int kSettledFeedbackSamples = 50;
 
     if (current_state_ == HarvestState::TRACKING_TARGET) {
       bool target_reached = true;
+      bool missing_velocity_feedback = false;
       for (size_t i = 0; i < joint_names.size(); ++i) {
         auto current = current_positions.find(joint_names[i]);
         if (current == current_positions.end()) {
@@ -204,17 +213,34 @@ private:
           break;
         }
         const double error = std::abs(current->second - target_joints_[i]);
-        if (error > kPosTolerance) {
+        const auto velocity = current_velocities.find(joint_names[i]);
+        if (velocity == current_velocities.end()) {
+          missing_velocity_feedback = true;
+          target_reached = false;
+          break;
+        }
+        if (error > kPosTolerance || std::abs(velocity->second) > kVelocityTolerance) {
           target_reached = false;
           break;
         }
       }
 
-      // Start the twist only after feedback confirms the target pose was reached.
+      if (missing_velocity_feedback) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 5000,
+          "Waiting for joint velocity feedback before declaring the target settled.");
+      }
+
+      // Require consecutive settled feedback so a single quiet sample cannot trigger a new trajectory.
       if (target_reached) {
-        current_state_ = HarvestState::READY_TO_TWIST;
-        RCLCPP_INFO(get_logger(), "Target Locked and Reached. Activating harvest twist sequence!");
-        execute_harvest_twist();
+        ++settled_feedback_count_;
+        if (settled_feedback_count_ >= kSettledFeedbackSamples) {
+          current_state_ = HarvestState::READY_TO_TWIST;
+          RCLCPP_INFO(get_logger(), "Target Locked and Reached. Activating harvest twist sequence!");
+          execute_harvest_twist();
+        }
+      } else {
+        settled_feedback_count_ = 0;
       }
     } else if (current_state_ == HarvestState::TWISTING) {
       constexpr double kTwistTolerance = 0.02;
@@ -242,6 +268,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_sub_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_pub_;
+  int settled_feedback_count_ = 0;
 };
 
 int main(int argc, char * argv[])

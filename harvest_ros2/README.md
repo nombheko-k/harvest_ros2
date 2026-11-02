@@ -30,7 +30,11 @@ Subscribes to raw joint targets on `/ik_node/raw_joint_targets` and feedback on 
 
 ### `gravity_compensation_node`
 
-Subscribes to `/joint_states` and `/arm_controller/joint_trajectory`. It computes per-joint PID effort commands, including shoulder gravity compensation, and publishes them on `/effort_controller/commands` (`std_msgs/msg/Float64MultiArray`). Controller gains and effort limits are declared as ROS parameters in the node.
+Subscribes to `/joint_states` and `/arm_controller/joint_trajectory`. It computes per-joint PID effort commands, including cumulative-angle gravity feed-forward for shoulder, elbow, and wrist pitch, and publishes them on `/effort_controller/commands` (`std_msgs/msg/Float64MultiArray`). Controller gains and effort limits are declared as ROS parameters in the node; the ros2_control YAML only configures the effort-command interface.
+
+### `crop_simulator_node`
+
+Subscribes to `/crop_simulator/spawn_strawberry` (`geometry_msgs/msg/PoseStamped`), spawns a stationary visible strawberry through Gazebo, and forwards a successful spawn's world-frame pose to `/harvest_target_pose` for IK.
 
 ## Run with Gazebo
 
@@ -41,7 +45,7 @@ ros2 launch harvest_description gazebo.launch.py
 
 ```
 
-This launch starts `ik_node`, `trajectory_planner_node`, and `gravity_compensation_node`, along with the Gazebo robot and its ROS 2 controllers. To use the kinematics or control nodes independently, start the required nodes and provide the topics they subscribe to.
+This launch starts `ik_node`, `trajectory_planner_node`, `gravity_compensation_node`, and `crop_simulator_node`, along with the Gazebo robot and its ROS 2 controllers. To use the kinematics or control nodes independently, start the required nodes and provide the topics they subscribe to.
 
 ## Build
 

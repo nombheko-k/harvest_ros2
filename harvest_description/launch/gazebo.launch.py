@@ -60,13 +60,14 @@ def generate_launch_description():
         launch_arguments={'gz_args': '-r empty.sdf'}.items(),
     )
 
-    # Clock bridge to sync physics engine and controller_manager
-    # Updated Bridge: Syncs both simulation clock AND handles the 720p 60FPS video stream pipeline
+    # Bridge the simulation clock, camera feed, and Gazebo entity services to ROS.
     clock_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-                   '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image'], # <-- Maps the optical data frame
+                   '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+                   '/world/empty/create@ros_gz_interfaces/srv/SpawnEntity',
+                   '/world/empty/remove@ros_gz_interfaces/srv/DeleteEntity'],
         output='screen'
     )
 
@@ -110,8 +111,11 @@ def generate_launch_description():
     executable='gravity_compensation_node',
     output='screen',
     parameters=[{
-        'shoulder_max_gravity_torque': 15.0, # Calibrate this based on actual arm weight
-        'shoulder_effort_limit': 30.0,
+        # Approximate each pitch joint's gravity coefficient from downstream URDF masses and lever arms.
+        'shoulder.max_gravity': 6.95,
+        'elbow.max_gravity': 3.80,
+        'wrist_p.max_gravity': 1.63,
+        'shoulder.limit': 30.0,
         'use_sim_time': use_sim_time
     }]
     )
@@ -120,6 +124,14 @@ def generate_launch_description():
     ik_node = Node(
         package='harvest_ros2',
         executable='ik_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # Keep the crop topic subscriber running with the same Gazebo service bridge.
+    crop_simulator_node = Node(
+        package='harvest_ros2',
+        executable='crop_simulator_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}]
     )
@@ -149,6 +161,7 @@ def generate_launch_description():
         trajectory_planner_node,  # Added explicit launch execution
         gravity_compensation_node,
         ik_node,                  # Added explicit launch execution
+        crop_simulator_node,
         delay_broadcaster_after_spawn,
         delay_effort_controller_after_broadcaster
     ])
