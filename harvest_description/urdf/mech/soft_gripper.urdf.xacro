@@ -25,6 +25,30 @@
       </xacro:box_inertial>
     </link>
 
+    <!-- CAMERA SENSOR PLUGIN INTEGRATION -->
+    <gazebo reference="camera_link">
+      <sensor name="harvester_camera" type="camera">
+        <!-- Aim from the upright tool toward the crops, and put the lens outside its visual housing. -->
+        <pose>-0.02 0.02 0 0 0 2.30</pose>
+        <always_on>true</always_on>
+        <update_rate>15.0</update_rate>
+        <visualize>true</visualize> <!-- Displays a visual cone of sight inside Gazebo -->
+        <topic>camera/image_raw</topic> <!-- The internal Gazebo transport topic channel -->
+        <camera>
+          <horizontal_fov>1.5708</horizontal_fov> <!-- 90 degree viewing path field -->
+          <image>
+            <width>640</width>
+            <height>360</height>
+            <format>R8G8B8</format> <!-- Clear RGB pixel array maps -->
+          </image>
+          <clip>
+            <near>0.02</near> <!-- 2cm minimum focal range for close pluck inspection -->
+            <far>5.0</far>
+          </clip>
+        </camera>
+      </sensor>
+    </gazebo>
+
       <!-- Finger Template Macro (Instantiates 3 flexible grasping links at 120-degree patterns) -->
     <!-- Each lightweight 80 mm finger extends forward along the arm's +X axis. -->
     <xacro:macro name="finger" params="prefix angle">

@@ -159,13 +159,24 @@ private:
                 }
             }
         }
+
+        // Preserve targets received before controller feedback is ready, then plan once all joints are known.
+        if (pending_raw_target_ &&
+            std::all_of(joint_state_seen_.begin(), joint_state_seen_.end(), [](bool seen) { return seen; }))
+        {
+            auto pending_target = std::move(pending_raw_target_);
+            ik_callback(pending_target);
+        }
     }
 
         // Orchestrates path generation when a new endpoint goal layout is requested
     void ik_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr raw_msg) {
         if (raw_msg->points.empty()) return;
         if (!std::all_of(joint_state_seen_.begin(), joint_state_seen_.end(), [](bool seen) { return seen; })) {
-            RCLCPP_WARN(this->get_logger(), "Waiting for feedback for all six joints before planning.");
+            pending_raw_target_ = raw_msg;
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Waiting for feedback for all six joints; the latest target will be planned when feedback arrives.");
             return;
         }
 
@@ -177,10 +188,10 @@ private:
             "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"
         };
 
-        // Lowered safety thresholds to stay well within the URDF 4.0 Nm effort limit
-        std::array<double, NUM_JOINTS> Vmax_orig = {0.2, 0.5, 0.5, 0.5, 0.8, 0.8};
-        std::array<double, NUM_JOINTS> Amax_orig = {0.3, 0.8, 0.8, 0.8, 1.2, 1.2};
-        std::array<double, NUM_JOINTS> Jmax_orig = {0.6, 1.5, 1.5, 1.5, 2.5, 2.5};
+        // Stay below the URDF speed limits while avoiding unnecessarily slow crop-to-crop moves.
+        std::array<double, NUM_JOINTS> Vmax_orig = {0.4, 0.8, 0.8, 0.8, 1.0, 1.0};
+        std::array<double, NUM_JOINTS> Amax_orig = {0.6, 1.4, 1.4, 1.4, 1.8, 1.8};
+        std::array<double, NUM_JOINTS> Jmax_orig = {1.2, 3.0, 3.0, 3.0, 4.0, 4.0};
 
         std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
         std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -229,9 +240,9 @@ private:
         start_point.accelerations = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         smooth_msg.points.push_back(start_point);
 
-        // Sample the synchronised pathways at 1000Hz frequency intervals (dt = 0.001 seconds).
+        // The controller interpolates between samples, so 100 Hz is sufficient and keeps messages small.
         // Append the exact endpoint separately below because max_total_time may not align to dt.
-        double dt = 0.001;
+        constexpr double dt = 0.01;
         for (double t = dt; t < max_total_time; t += dt) {
             auto point = trajectory_msgs::msg::JointTrajectoryPoint();
             point.time_from_start = rclcpp::Duration::from_seconds(t);
@@ -284,6 +295,7 @@ private:
     rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr smooth_trajectory_pub_;
     std::array<double, NUM_JOINTS> latest_joint_positions_;
     std::array<bool, NUM_JOINTS> joint_state_seen_;
+    trajectory_msgs::msg::JointTrajectory::SharedPtr pending_raw_target_;
 };
 
 // Node deployment

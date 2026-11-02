@@ -37,7 +37,8 @@
 			<axis xyz="1 0 0"/>
 			<limit lower="-0.9" upper="0.9" effort="200.0" velocity="0.5"/>
 			<origin xyz="0 0 0.025" rpy="0 0 0"/>
-			<dynamics damping="10.0" friction="5.0"/>
+			<!-- Keep rail stiction below the PID's available correction so X can settle on target. -->
+			<dynamics damping="2.0" friction="0.1"/>
 		</joint>
 	</xacro:macro>
 </robot>

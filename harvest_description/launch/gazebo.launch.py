@@ -26,15 +26,34 @@ def generate_launch_description():
 
     # 1. Create the LaunchConfiguration variable
     use_sim_time = LaunchConfiguration('use_sim_time')
-    
+    metrics_file = LaunchConfiguration('metrics_file')
+    metrics_sample_period_sec = LaunchConfiguration('metrics_sample_period_sec')
+    target_timeout_sec = LaunchConfiguration('target_timeout_sec')
+
     # 2. Declare the argument so it can be modified via CLI (defaults to true for simulation)
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
         default_value='true',
         description='Use simulation (Gazebo) clock if true'
     )
+    declare_metrics_file_cmd = DeclareLaunchArgument(
+        'metrics_file',
+        default_value='harvest_evaluation_metrics.csv',
+        description='CSV evaluation metrics path; relative paths use the launch working directory'
+    )
+    declare_metrics_sample_period_cmd = DeclareLaunchArgument(
+        'metrics_sample_period_sec',
+        default_value='1.0',
+        description='Wall-time interval between robot telemetry rows in the evaluation CSV'
+    )
+    declare_target_timeout_cmd = DeclareLaunchArgument(
+        'target_timeout_sec',
+        default_value='60.0',
+        description='Wall-time limit for detection or clearing before a failure row is recorded'
+    )
 
     xacro_file = os.path.join(pkg_share, 'urdf', 'robots', 'harvest_full.urdf.xacro')
+    world_file = os.path.join(pkg_share, 'worlds', 'harvest.sdf')
     
     # WRAP THE COMMAND STRING SO LAUNCH DOES NOT CONFUSE XML FOR YAML
     robot_description_content = ParameterValue(
@@ -57,14 +76,18 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items(),
+        # Use the project world because Gazebo's built-in empty world does not load Sensors.
+        launch_arguments={'gz_args': f'-r {world_file}'}.items(),
     )
 
-    # Clock bridge to sync physics engine and controller_manager
+    # Bridge the simulation clock, camera feed, and Gazebo entity services to ROS.
     clock_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+                   '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+                   '/world/empty/create@ros_gz_interfaces/srv/SpawnEntity',
+                   '/world/empty/remove@ros_gz_interfaces/srv/DeleteEntity'],
         output='screen'
     )
 
@@ -108,8 +131,11 @@ def generate_launch_description():
     executable='gravity_compensation_node',
     output='screen',
     parameters=[{
-        'shoulder_max_gravity_torque': 15.0, # Calibrate this based on actual arm weight
-        'shoulder_effort_limit': 30.0,
+        # Approximate each pitch joint's gravity coefficient from downstream URDF masses and lever arms.
+        'shoulder.max_gravity': 6.95,
+        'elbow.max_gravity': 3.80,
+        'wrist_p.max_gravity': 1.63,
+        'shoulder.limit': 30.0,
         'use_sim_time': use_sim_time
     }]
     )
@@ -120,6 +146,20 @@ def generate_launch_description():
         executable='ik_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # Keep the crop topic subscriber running with the same Gazebo service bridge.
+    crop_simulator_node = Node(
+        package='harvest_ros2',
+        executable='crop_simulator_node',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'metrics_file': metrics_file,
+            'metrics_sample_period_sec': ParameterValue(
+                metrics_sample_period_sec, value_type=float),
+            'target_timeout_sec': ParameterValue(target_timeout_sec, value_type=float)
+        }]
     )
 
     # Delayed event hooks: Sequential startup orchestration
@@ -140,6 +180,9 @@ def generate_launch_description():
     return LaunchDescription([
         set_gazebo_resource_path,
         declare_use_sim_time_cmd,  # This registers 'use_sim_time' so it exists
+        declare_metrics_file_cmd,
+        declare_metrics_sample_period_cmd,
+        declare_target_timeout_cmd,
         robot_state_publisher_node,
         gazebo_sim,
         clock_bridge,
@@ -147,6 +190,7 @@ def generate_launch_description():
         trajectory_planner_node,  # Added explicit launch execution
         gravity_compensation_node,
         ik_node,                  # Added explicit launch execution
+        crop_simulator_node,
         delay_broadcaster_after_spawn,
         delay_effort_controller_after_broadcaster
     ])
