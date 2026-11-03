@@ -236,24 +236,23 @@ private:
                 
                 double max_grav = this->get_parameter("shoulder.max_gravity").as_double();
                 // This coefficient sums the downstream URDF masses' lever arms at the shoulder.
-                double eval_position = target_initialized_ ? target_positions_[i] : current_positions_[i];
-                ff_gravity = -max_grav * std::sin(eval_position);
+                ff_gravity = -max_grav * std::sin(current_positions_[i]);
             } else if (joint_names_[i] == "elbow_joint") {
                 kp = this->get_parameter("elbow.kp").as_double();    ki = this->get_parameter("elbow.ki").as_double();    kd = this->get_parameter("elbow.kd").as_double();
                 i_clamp = this->get_parameter("elbow.i_clamp").as_double(); limit = this->get_parameter("elbow.limit").as_double();
                 // Elbow gravity depends on the absolute arm pitch, not elbow angle alone.
                 double max_grav_el = this->get_parameter("elbow.max_gravity").as_double();
-                const double shoulder_angle = target_initialized_ ? target_positions_[2] : current_positions_[2];
-                const double elbow_angle = target_initialized_ ? target_positions_[3] : current_positions_[3];
+                const double shoulder_angle = current_positions_[2];
+                const double elbow_angle = current_positions_[3];
                 ff_gravity = -max_grav_el * std::sin(shoulder_angle + elbow_angle);
             } else if (joint_names_[i] == "wrist_pitch_joint") {
                 kp = this->get_parameter("wrist_p.kp").as_double();  ki = this->get_parameter("wrist_p.ki").as_double();  kd = this->get_parameter("wrist_p.kd").as_double();
                 i_clamp = this->get_parameter("wrist_p.i_clamp").as_double(); limit = this->get_parameter("wrist_p.limit").as_double();
                 // Wrist-pitch gravity uses the cumulative pitch of all three arm links.
                 double max_grav_wp = this->get_parameter("wrist_p.max_gravity").as_double();
-                const double shoulder_angle = target_initialized_ ? target_positions_[2] : current_positions_[2];
-                const double elbow_angle = target_initialized_ ? target_positions_[3] : current_positions_[3];
-                const double wrist_pitch = target_initialized_ ? target_positions_[4] : current_positions_[4];
+                const double shoulder_angle = current_positions_[2];
+                const double elbow_angle = current_positions_[3];
+                const double wrist_pitch = current_positions_[4];
                 ff_gravity = -max_grav_wp * std::sin(shoulder_angle + elbow_angle + wrist_pitch);
             } else if (joint_names_[i] == "wrist_roll_joint") {
                 kp = this->get_parameter("wrist_r.kp").as_double();  ki = this->get_parameter("wrist_r.ki").as_double();  kd = this->get_parameter("wrist_r.kd").as_double();

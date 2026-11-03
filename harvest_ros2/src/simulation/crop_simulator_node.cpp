@@ -33,7 +33,7 @@ constexpr std::array<const char *, 6> kJointNames = {
   "wrist_pitch_joint", "wrist_roll_joint"};
 constexpr double kCropRadius = 0.012;
 constexpr double kClusterCenterY = 0.30;
-constexpr double kClusterCenterZ = 0.35;
+constexpr double kClusterCenterZ = 0.385;
 constexpr double kGridSpacing = 0.035;
 constexpr double kGridJitter = 0.002;
 constexpr size_t kImageSampleStep = 2;
@@ -307,6 +307,11 @@ private:
         << "<diffuse>1.0 0.0 0.05 1.0</diffuse>"
         << "<emissive>0.25 0.0 0.01 1.0</emissive></material>"
         << "</visual>"
+        // A short green stem above each fruit makes the suspended greenhouse cluster visible.
+        << "<visual name='stem'><pose>0 0 0.018 0 0 0</pose>"
+        << "<geometry><cylinder><radius>0.002</radius><length>0.016</length></cylinder></geometry>"
+        << "<material><ambient>0.08 0.35 0.05 1.0</ambient>"
+        << "<diffuse>0.08 0.35 0.05 1.0</diffuse></material></visual>"
         << "<collision name='collision'><geometry><sphere><radius>"
         << kCropRadius
         << "</radius></sphere></geometry></collision>"
@@ -414,7 +419,7 @@ private:
     cleared_count_ = 0;
     write_metrics_row("cluster_started", "spawning_cluster", "pending");
     RCLCPP_INFO(
-      get_logger(), "Spawning a randomized cluster of %zu crops in a 10 cm x 10 cm zone.",
+      get_logger(), "Spawning a randomized vertical hanging cluster of %zu crops.",
       cluster_targets_.size());
     spawn_next_cluster_crop();
   }
@@ -426,6 +431,8 @@ private:
     const int count = count_distribution(random_engine_);
 
     std::vector<std::array<int, 2>> grid;
+    // Distribute fruit across horizontal columns and vertical hanging levels,
+    // rather than laying the cluster flat on a ground plane.
     for (int row = -1; row <= 1; ++row) {
       for (int column = -1; column <= 1; ++column) {
         grid.push_back({column, row});
@@ -442,8 +449,9 @@ private:
       target.pose.position.x =
         cell[0] * kGridSpacing + jitter_distribution(random_engine_);
       target.pose.position.y =
-        kClusterCenterY + cell[1] * kGridSpacing + jitter_distribution(random_engine_);
-      target.pose.position.z = kClusterCenterZ;
+        kClusterCenterY + jitter_distribution(random_engine_);
+      target.pose.position.z =
+        kClusterCenterZ + cell[1] * kGridSpacing + jitter_distribution(random_engine_);
       target.pose.orientation.w = 1.0;
       targets.push_back(std::move(target));
     }

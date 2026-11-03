@@ -33,6 +33,9 @@ constexpr double forearmLength = 0.15;
 constexpr double toolXOffset = 0.16;
 constexpr double toolYOffset = -0.072;
 
+// Finger bodies span x=0.005 to x=0.085 from the tool mount; target their midpoint.
+constexpr double graspOffset = 0.045;
+
 // The solver aims the tool horizontally
 constexpr double desiredToolPitch = kPi / 2.0;
 
@@ -106,8 +109,10 @@ private:
     // Adjust the base yaw to compensate for the tool's lateral Y-offset
     const double base_angle = std::atan2(target_y, relative_x) - std::atan2(toolYOffset, planar_radius);
 
-    const double wrist_radius = planar_radius - toolXOffset * std::sin(desiredToolPitch);
-    const double wrist_z = target_z - baseHeight - toolXOffset * std::cos(desiredToolPitch);
+    // Keep the tool mount behind the berry so its center lies midway along the fingers.
+    const double mountOffset = toolXOffset + graspOffset;
+    const double wrist_radius = planar_radius - mountOffset * std::sin(desiredToolPitch);
+    const double wrist_z = target_z - baseHeight - mountOffset * std::cos(desiredToolPitch);
 
     const double reach_squared = wrist_radius * wrist_radius + wrist_z * wrist_z;
     double cos_elbow = (reach_squared - upperArmLength * upperArmLength - forearmLength * forearmLength) /
@@ -202,10 +207,10 @@ private:
     std::vector<std::string> joint_names = {
       "rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint"};
 
-    // Allow realistic Gazebo tracking error while requiring low velocity before twisting.
+    // Keep the grasp locked before twisting, while allowing modest Gazebo velocity noise.
     constexpr double kPosTolerance = 0.01;
-    constexpr double kVelocityTolerance = 0.05;
-    constexpr int kSettledFeedbackSamples = 10;
+    constexpr double kVelocityTolerance = 0.15;
+    constexpr int kSettledFeedbackSamples = 20;
 
     if (current_state_ == HarvestState::TRACKING_TARGET) {
       bool target_reached = true;
@@ -241,7 +246,14 @@ private:
         if (settled_feedback_count_ >= kSettledFeedbackSamples) {
           current_state_ = HarvestState::READY_TO_TWIST;
           RCLCPP_INFO(get_logger(), "Target Locked and Reached. Activating harvest twist sequence!");
-          execute_harvest_twist();
+          const auto roll_position = current_positions.find("wrist_roll_joint");
+          if (roll_position == current_positions.end()) {
+            RCLCPP_ERROR(get_logger(), "Cannot start harvest twist: wrist-roll feedback is missing.");
+            current_state_ = HarvestState::TRACKING_TARGET;
+            settled_feedback_count_ = 0;
+            return;
+          }
+          execute_harvest_twist(roll_position->second);
         }
       } else {
         settled_feedback_count_ = 0;
@@ -253,8 +265,8 @@ private:
       // Check the final pose with tolerances that account for simulated joint-state jitter.
       constexpr double kPositionTolerance = 0.015;
       constexpr double kRollTolerance = 0.05;
-      constexpr double kVelocityTolerance = 0.05;
-      constexpr int kSettledFeedbackSamples = 10;
+      constexpr double kVelocityTolerance = 0.15;
+      constexpr int kSettledFeedbackSamples = 20;
       bool all_joints_settled = true;
 
       for (size_t i = 0; i < all_joint_names.size(); ++i) {
@@ -266,7 +278,7 @@ private:
         }
 
         const double expected_position =
-          i < target_joints_.size() ? target_joints_[i] : kPi / 2.0;
+          i < target_joints_.size() ? target_joints_[i] : twist_target_roll_;
         const double position_tolerance = i == target_joints_.size() ?
           kRollTolerance : kPositionTolerance;
         if (std::abs(current->second - expected_position) > position_tolerance ||
@@ -295,16 +307,23 @@ private:
     }
   }
 
-  void execute_harvest_twist()
+  void execute_harvest_twist(double current_roll)
   {
+    // Choose a full 90-degree twist from measured roll without exceeding either joint limit.
+    constexpr double kTwistAngle = kPi / 2.0;
+    twist_target_roll_ = current_roll + kTwistAngle <= kPi ?
+      current_roll + kTwistAngle : current_roll - kTwistAngle;
+
     current_state_ = HarvestState::TWISTING;
 
     send_trajectory_point(
       target_joints_[0], target_joints_[1], target_joints_[2],
-      target_joints_[3], target_joints_[4], kPi / 2.0, 1.5);
+      target_joints_[3], target_joints_[4], twist_target_roll_, 1.5);
 
     // Keep monitoring joint feedback; publishing a command is not proof of completion.
-    RCLCPP_INFO(get_logger(), "Harvest twist action commanded; waiting for wrist-roll feedback.");
+    RCLCPP_INFO(
+      get_logger(), "Harvest twist commanded: wrist roll %.3f -> %.3f rad; waiting for feedback.",
+      current_roll, twist_target_roll_);
   }
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
@@ -313,6 +332,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr harvest_complete_pub_;
   int settled_feedback_count_ = 0;
   int twist_settled_feedback_count_ = 0;
+  double twist_target_roll_ = 0.0;
 };
 
 int main(int argc, char * argv[])

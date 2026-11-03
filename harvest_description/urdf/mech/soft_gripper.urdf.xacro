@@ -4,18 +4,18 @@
   <xacro:include filename="$(find harvest_description)/urdf/robot_utils.urdf.xacro"/>
 
   <xacro:macro name="soft_gripper">
-    <!-- This frame is mounted on the fourth gearbox output, above the blue link. -->
-    <!-- The camera sits on the rear of the mount, away from the grasping area. -->
+    <!-- Mount the camera beside the dark-blue wrist link, clear of the gripper fingers. -->
     <joint name="camera_joint" type="fixed">
-      <parent link="end_effector_tool_mount"/>
+      <parent link="wrist_roll_link"/>
       <child link="camera_link"/>
-      <origin xyz="0.0125 0.02 0.02" rpy="0 0 0"/>
+      <!-- Bring the rotated housing edge onto the link's +Y side; aim at berries when upright. -->
+      <origin xyz="0.15 0 0" rpy="0 0 1.5"/>
     </joint>
 
     <link name="camera_link">
       <visual>
         <geometry><box size="0.035 0.035 0.025"/></geometry>
-        <material name="red"/>
+        <material name="silver"/>
       </visual>
       <collision>
         <geometry><box size="0.035 0.035 0.025"/></geometry>
@@ -28,8 +28,8 @@
     <!-- CAMERA SENSOR PLUGIN INTEGRATION -->
     <gazebo reference="camera_link">
       <sensor name="harvester_camera" type="camera">
-        <!-- Aim from the upright tool toward the crops, and put the lens outside its visual housing. -->
-        <pose>-0.02 0.02 0 0 0 2.30</pose>
+        <!-- Offset the optical origin just beyond the camera housing's front face. -->
+        <pose>0.02 0 0 0 0 0</pose>
         <always_on>true</always_on>
         <update_rate>15.0</update_rate>
         <visualize>true</visualize> <!-- Displays a visual cone of sight inside Gazebo -->
