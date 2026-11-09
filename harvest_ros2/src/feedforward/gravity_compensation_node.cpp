@@ -17,48 +17,48 @@ public:
         // Use lower position gains and more velocity damping to reduce oscillation;
         // small integral bounds compensate residual bias without winding up at the target.
         // Rail
-        this->declare_parameter<double>("rail.kp", 350.0);
+        this->declare_parameter<double>("rail.kp", 120.0);
         this->declare_parameter<double>("rail.ki", 2.0);
-        this->declare_parameter<double>("rail.kd", 120.0);
-        this->declare_parameter<double>("rail.i_clamp", 1.5);
+        this->declare_parameter<double>("rail.kd", 10.0);
+        this->declare_parameter<double>("rail.i_clamp", 2.5);
         this->declare_parameter<double>("rail.limit", 200.0); // Prismatic effort limit is in newtons.
 
         // Base
-        this->declare_parameter<double>("base.kp", 40.0);
-        this->declare_parameter<double>("base.ki", 0.2);
-        this->declare_parameter<double>("base.kd", 4.0);
-        this->declare_parameter<double>("base.i_clamp", 1.0);
+        this->declare_parameter<double>("base.kp", 30.0);
+        this->declare_parameter<double>("base.ki", 0.1);
+        this->declare_parameter<double>("base.kd", 4.5);
+        this->declare_parameter<double>("base.i_clamp", 0.2);
         this->declare_parameter<double>("base.limit", 4.0);
 
         // Shoulder
-        this->declare_parameter<double>("shoulder.kp", 60.0);
-        this->declare_parameter<double>("shoulder.ki", 0.5);
-        this->declare_parameter<double>("shoulder.kd", 6.0);
-        this->declare_parameter<double>("shoulder.i_clamp", 1.0);
-        this->declare_parameter<double>("shoulder.limit", 30.0);
+        this->declare_parameter<double>("shoulder.kp", 45.0);
+        this->declare_parameter<double>("shoulder.ki", 0.0);
+        this->declare_parameter<double>("shoulder.kd", 4.0);
+        this->declare_parameter<double>("shoulder.i_clamp", 0.0);
+        this->declare_parameter<double>("shoulder.limit", 8.0);
         this->declare_parameter<double>("shoulder.max_gravity", 6.95);
 
         // Elbow
-        this->declare_parameter<double>("elbow.kp", 45.0);
-        this->declare_parameter<double>("elbow.ki", 0.2);
-        this->declare_parameter<double>("elbow.kd", 4.5);
-        this->declare_parameter<double>("elbow.i_clamp", 0.5);
-        this->declare_parameter<double>("elbow.limit", 15.0);
+        this->declare_parameter<double>("elbow.kp", 25.0);
+        this->declare_parameter<double>("elbow.ki", 0.0);
+        this->declare_parameter<double>("elbow.kd", 2.0);
+        this->declare_parameter<double>("elbow.i_clamp", 0.0);
+        this->declare_parameter<double>("elbow.limit", 4.0);
         this->declare_parameter<double>("elbow.max_gravity", 3.80);
         
         // Wrist pitch
-        this->declare_parameter<double>("wrist_p.kp", 30.0);
+        this->declare_parameter<double>("wrist_p.kp", 10.0);
         this->declare_parameter<double>("wrist_p.ki", 0.0);
-        this->declare_parameter<double>("wrist_p.kd", 3.0);
+        this->declare_parameter<double>("wrist_p.kd", 1.0);
         this->declare_parameter<double>("wrist_p.i_clamp", 0.0);
-        this->declare_parameter<double>("wrist_p.limit", 10.0);
+        this->declare_parameter<double>("wrist_p.limit", 4.0);
         this->declare_parameter<double>("wrist_p.max_gravity", 1.63);
 
         // wrist roll
         this->declare_parameter<double>("wrist_r.kp", 8.0);
-        this->declare_parameter<double>("wrist_r.ki", 0.1);
+        this->declare_parameter<double>("wrist_r.ki", 0.0);
         this->declare_parameter<double>("wrist_r.kd", 0.8);
-        this->declare_parameter<double>("wrist_r.i_clamp", 1.0);
+        this->declare_parameter<double>("wrist_r.i_clamp", 0.0);
         this->declare_parameter<double>("wrist_r.limit", 4.0);
 
         joint_names_ = {"rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"};
@@ -244,7 +244,7 @@ private:
                 double max_grav_el = this->get_parameter("elbow.max_gravity").as_double();
                 const double shoulder_angle = current_positions_[2];
                 const double elbow_angle = current_positions_[3];
-                ff_gravity = -max_grav_el * std::sin(shoulder_angle + elbow_angle);
+                ff_gravity = max_grav_el * std::sin(shoulder_angle + elbow_angle);
             } else if (joint_names_[i] == "wrist_pitch_joint") {
                 kp = this->get_parameter("wrist_p.kp").as_double();  ki = this->get_parameter("wrist_p.ki").as_double();  kd = this->get_parameter("wrist_p.kd").as_double();
                 i_clamp = this->get_parameter("wrist_p.i_clamp").as_double(); limit = this->get_parameter("wrist_p.limit").as_double();
@@ -253,7 +253,7 @@ private:
                 const double shoulder_angle = current_positions_[2];
                 const double elbow_angle = current_positions_[3];
                 const double wrist_pitch = current_positions_[4];
-                ff_gravity = -max_grav_wp * std::sin(shoulder_angle + elbow_angle + wrist_pitch);
+                ff_gravity = max_grav_wp * std::sin(shoulder_angle + elbow_angle + wrist_pitch);
             } else if (joint_names_[i] == "wrist_roll_joint") {
                 kp = this->get_parameter("wrist_r.kp").as_double();  ki = this->get_parameter("wrist_r.ki").as_double();  kd = this->get_parameter("wrist_r.kd").as_double();
                 i_clamp = this->get_parameter("wrist_r.i_clamp").as_double(); limit = this->get_parameter("wrist_r.limit").as_double();

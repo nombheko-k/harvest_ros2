@@ -190,8 +190,8 @@ private:
 
         // Stay below the URDF speed limits while avoiding unnecessarily slow crop-to-crop moves.
         std::array<double, NUM_JOINTS> Vmax_orig = {0.4, 0.8, 0.8, 0.8, 1.0, 1.0};
-        std::array<double, NUM_JOINTS> Amax_orig = {0.6, 1.4, 1.4, 1.4, 1.8, 1.8};
-        std::array<double, NUM_JOINTS> Jmax_orig = {1.2, 3.0, 3.0, 3.0, 4.0, 4.0};
+        std::array<double, NUM_JOINTS> Amax_orig = {0.6, 0.7, 0.7, 1.4, 1.8, 1.8}; 
+        std::array<double, NUM_JOINTS> Jmax_orig = {1.2, 1.5, 1.5, 3.0, 4.0, 4.0};
 
         std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
         std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
