@@ -21,6 +21,7 @@ namespace
 constexpr double kPi = 3.14159265358979323846;
 
 // Updated kinematics based on URDF offsets
+// Rail travel and link lengths below must match the limits and dimensions in the robot URDF.
 constexpr double railMin = -0.9;
 constexpr double railMax = 0.9;
 
@@ -38,17 +39,21 @@ constexpr double toolYOffset = -0.072;
 constexpr double graspOffset = 0.045;
 
 // Prefer a horizontal tool, but allow a small tilt when needed to satisfy joint limits.
+// The IK solution searches nearby angles when the preferred orientation is infeasible.
 constexpr double desiredToolPitch = kPi / 2.0;
-constexpr double kToolPitchSearchStep = 0.01;
-constexpr int kToolPitchSearchSteps = 50;
-constexpr double kJointLimitMargin = 0.03;
-constexpr std::array<double, 6> kSettlePositionTolerance = {
+constexpr double toolPitchSearchStep = 0.01;
+constexpr int toolPitchSearchSteps = 50;
+constexpr double jointLimitMargin = 0.03;
+
+// Settling requires every arm axis to be close to its goal and moving slowly for a short interval.
+constexpr std::array<double, 6> settlePositionTolerance = {
   0.05, 0.2, 0.2, 0.2, 0.2, 0.2};
-constexpr double kGraspPositionTolerance = 0.05;
-constexpr double kSettleVelocityTolerance = 0.03;
-constexpr double kSettleDurationSec = 0.20;
-constexpr std::chrono::seconds kFingerActionTimeout{4};
+constexpr double graspPositionTolerance = 0.05;
+constexpr double settleVelocityTolerance = 0.03;
+constexpr double settleDurationSec = 0.20;
+constexpr std::chrono::seconds fingerActionTimeout{4};
 // The shallow closure works with the URDF's low effort cap to avoid squeezing the berry.
+// These targets are radians; the finger hinges' effort limit bounds contact force.
 constexpr double kClosedFingerPosition = -0.17;
 constexpr double kOpenFingerPosition = 0.0;
 constexpr double kFingerPositionTolerance = 0.02;
@@ -63,12 +68,15 @@ bool inside_range(double value, double lower, double upper)
 std::array<double, 3> grasp_point_from_joints(
   const std::array<double, 6> & joints)
 {
+  // Joint order matches the arm trajectory: rail, yaw, shoulder, elbow, pitch, and roll.
   const double rail = joints[0];
   const double base = joints[1];
   const double shoulder = joints[2];
   const double elbow = joints[3];
   const double wrist_pitch = joints[4];
   const double tool_pitch = shoulder + elbow + wrist_pitch;
+
+  // Resolve each link into the arm's radial plane; tool +X points along the fingers.
   const double radial_position =
     upperArmLength * std::sin(shoulder) +
     forearmLength * std::sin(shoulder + elbow) +
@@ -86,6 +94,7 @@ std::array<double, 3> grasp_point_from_joints(
 }  // namespace
 
 // enum definition for the harvest state machine
+// The states keep motion, grasp, twist, release, and terminal outcomes in a fixed order.
 enum class HarvestState {
   TRACKING_TARGET,
   CLOSING_GRIPPER,
@@ -98,8 +107,11 @@ enum class HarvestState {
 class UniversalWristIKNode : public rclcpp::Node
 {
 public:
+  // Keep the harvest state visible at class scope so joint feedback can advance the active phase.
   HarvestState current_state_ = HarvestState::TRACKING_TARGET;
   bool has_target_ = false; // safety latch
+  // Ignore joint feedback until a valid berry target has been solved.
+  // Expected positions for the first five arm joints; wrist roll is checked separately.
   std::vector<double> target_joints_ = {0.0, 0.0, 0.0, 0.0, 0.0}; // rail, base, shoulder, elbow, pitch
 
   UniversalWristIKNode() : Node("ik_node")
@@ -126,6 +138,7 @@ public:
 private:
   void target_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
   {
+    // The IK geometry is defined in the simulator's world frame; reject ambiguous coordinates.
     if (msg->header.frame_id != "world") {
       RCLCPP_ERROR(get_logger(), "Target frame expected 'world'.");
       return;
@@ -135,6 +148,7 @@ private:
     const double target_y = msg->pose.position.y;
     const double target_z = msg->pose.position.z;
 
+    // Put the rail directly under the target when possible, leaving the rotary arm to solve reach.
     const double rail_position = std::clamp(target_x, railMin, railMax);
     const double relative_x = target_x - rail_position; 
 
@@ -162,13 +176,14 @@ private:
     double selected_tool_pitch = desiredToolPitch;
 
     // Search outward from the preferred tool angle and choose the smallest feasible tilt.
-    for (int pitch_step = 0; pitch_step <= kToolPitchSearchSteps && !solution_found; ++pitch_step) {
+    // Try both elbow configurations at each pitch to preserve the grasp location near joint limits.
+    for (int pitch_step = 0; pitch_step <= toolPitchSearchSteps && !solution_found; ++pitch_step) {
       for (const double direction : std::array<double, 2>{1.0, -1.0}) {
         if (pitch_step == 0 && direction < 0.0) {
           continue;
         }
         const double try_tool_pitch =
-          desiredToolPitch + direction * pitch_step * kToolPitchSearchStep;
+          desiredToolPitch + direction * pitch_step * toolPitchSearchStep;
         const double wrist_radius = planar_radius - mount_offset * std::sin(try_tool_pitch);
         const double wrist_z =
           target_z - baseHeight - mount_offset * std::cos(try_tool_pitch);
@@ -190,9 +205,9 @@ private:
           const double try_wrist = try_tool_pitch - try_shoulder - try_elbow;
 
           // Leave a small margin so the arm does not settle against a hard joint stop.
-          if (inside_range(try_shoulder, -1.5708 + kJointLimitMargin, 1.5708 - kJointLimitMargin) &&
-              inside_range(try_elbow, -2.0 + kJointLimitMargin, 2.0 - kJointLimitMargin) &&
-              inside_range(try_wrist, -1.5708 + kJointLimitMargin, 1.5708 - kJointLimitMargin))
+          if (inside_range(try_shoulder, -1.5708 + jointLimitMargin, 1.5708 - jointLimitMargin) &&
+              inside_range(try_elbow, -2.0 + jointLimitMargin, 2.0 - jointLimitMargin) &&
+              inside_range(try_wrist, -1.5708 + jointLimitMargin, 1.5708 - jointLimitMargin))
           {
             shoulder_angle = try_shoulder;
             elbow_angle = try_elbow;
@@ -213,11 +228,12 @@ private:
         get_logger(),
         "Target (%.3f, %.3f, %.3f) is unreachable within joint limits and a +/- %.2f rad "
         "tool-pitch adjustment.",
-        target_x, target_y, target_z, kToolPitchSearchSteps * kToolPitchSearchStep);
+        target_x, target_y, target_z, toolPitchSearchSteps * toolPitchSearchStep);
       return;
     }
 
     // Update internal state and target cache for tracking
+    // Store both the solved joint goal and berry position for later feedback checks.
     target_joints_ = {rail_position, base_angle, shoulder_angle, elbow_angle, wrist_angle};
     target_x_ = target_x;
     target_y_ = target_y;
@@ -243,6 +259,7 @@ private:
     double elbow_angle, double wrist_pitch, double wrist_roll = 0.0,
     double duration_sec = 4.0)
   {
+    // A full six-axis command is used for the approach so wrist roll stays at its home angle.
     trajectory_msgs::msg::JointTrajectory trajectory;
     trajectory.header.stamp = now();
     trajectory.joint_names = {
@@ -258,6 +275,7 @@ private:
 
   void send_wrist_roll_trajectory_point(double wrist_roll, double duration_sec)
   {
+    // Partial trajectories let the planner hold the other joints at their measured positions.
     trajectory_msgs::msg::JointTrajectory trajectory;
     trajectory.header.stamp = now();
     trajectory.joint_names = {"wrist_roll_joint"};
@@ -282,6 +300,7 @@ private:
     const std::unordered_map<std::string, double> & current_velocities,
     double target_position)
   {
+    // Missing feedback is not treated as success: every finger must report both position and speed.
     for (const char * joint_name : kFingerJointNames) {
       const auto position = current_positions.find(joint_name);
       const auto velocity = current_velocities.find(joint_name);
@@ -292,7 +311,7 @@ private:
         return false;
       }
       if (std::abs(position->second - target_position) > kFingerPositionTolerance ||
-          std::abs(velocity->second) > kSettleVelocityTolerance)
+          std::abs(velocity->second) > settleVelocityTolerance)
       {
         RCLCPP_DEBUG(
           get_logger(), "Gripper joint %s is still moving or outside its target tolerance.",
@@ -307,13 +326,14 @@ private:
     const std::unordered_map<std::string, double> & current_positions,
     const std::unordered_map<std::string, double> & current_velocities)
   {
+    // A finger stopped short of its target can indicate berry contact, so check that it is truly still.
     for (const char * joint_name : kFingerJointNames) {
       if (current_positions.find(joint_name) == current_positions.end()) {
         return false;
       }
       const auto velocity = current_velocities.find(joint_name);
       if (velocity == current_velocities.end() ||
-          std::abs(velocity->second) > kSettleVelocityTolerance)
+          std::abs(velocity->second) > settleVelocityTolerance)
       {
         return false;
       }
@@ -323,6 +343,7 @@ private:
 
   void fail_harvest(const char * reason)
   {
+    // Publish an explicit failure result so the coordinator can record this cycle as unsuccessful.
     current_state_ = HarvestState::HARVEST_FAILED;
     std_msgs::msg::Bool completion;
     completion.data = false;
@@ -332,6 +353,7 @@ private:
 
   void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
   {
+    // Ignore stale or unrelated feedback once this harvest cycle has completed or failed.
     if (!has_target_ ||
         (current_state_ != HarvestState::TRACKING_TARGET &&
          current_state_ != HarvestState::CLOSING_GRIPPER &&
@@ -341,6 +363,7 @@ private:
     const rclcpp::Time feedback_time = now();
 
     // Map joint names to their current positions
+    // JointState ordering can vary, so use names rather than assuming a fixed array order.
     std::unordered_map<std::string, double> current_positions;
     std::unordered_map<std::string, double> current_velocities;
     for (size_t i = 0; i < msg->name.size(); ++i) {
@@ -353,11 +376,13 @@ private:
     }
 
     // Include wrist roll's commanded home position so no axis is still moving at the target.
+    // The full set of arm axes must settle before the gripper action begins.
     constexpr std::array<const char *, 6> joint_names = {
       "rail_joint", "base_joint", "shoulder_joint", "elbow_joint",
       "wrist_pitch_joint", "wrist_roll_joint"};
 
     if (current_state_ == HarvestState::TRACKING_TARGET) {
+      // Require position and velocity data for all joints before trusting the end-effector pose.
       bool target_reached = true;
       bool missing_joint_feedback = false;
       double max_position_error = 0.0;
@@ -376,10 +401,11 @@ private:
         const double expected_position = i < target_joints_.size() ? target_joints_[i] : 0.0;
         double error = std::abs(current->second - expected_position);
         if (i > 0) {
+          // Revolute joints are periodic; compare the shortest angular difference across +/- pi.
           error = std::abs(std::remainder(current->second - expected_position, 2.0 * kPi));
         }
         max_position_error = std::max(max_position_error, error);
-        bool joint_settled = error <= kSettlePositionTolerance[i];
+        bool joint_settled = error <= settlePositionTolerance[i];
         const auto velocity = current_velocities.find(joint_names[i]);
         if (velocity == current_velocities.end()) {
           missing_joint_feedback = true;
@@ -389,7 +415,7 @@ private:
         }
         const double joint_velocity = std::abs(velocity->second);
         max_joint_velocity = std::max(max_joint_velocity, joint_velocity);
-        if (joint_velocity > kSettleVelocityTolerance) {
+        if (joint_velocity > settleVelocityTolerance) {
           joint_settled = false;
         }
         if (!joint_settled) {
@@ -403,12 +429,13 @@ private:
 
       double grasp_position_error = 0.0;
       if (!missing_joint_feedback) {
+        // Joint convergence alone is insufficient if geometry leaves the fingers away from the berry.
         const auto grasp_point = grasp_point_from_joints(measured_joint_positions);
         const double dx = grasp_point[0] - target_x_;
         const double dy = grasp_point[1] - target_y_;
         const double dz = grasp_point[2] - target_z_;
         grasp_position_error = std::sqrt(dx * dx + dy * dy + dz * dz);
-        if (grasp_position_error > kGraspPositionTolerance) {
+        if (grasp_position_error > graspPositionTolerance) {
           target_reached = false;
           limiting_joint = "grasp_point";
         }
@@ -428,15 +455,16 @@ private:
           "(rail tolerance %.3f m, rotary tolerance %.3f rad, "
           "grasp tolerance %.3f m, speed tolerance %.3f).",
           limiting_joint, max_position_error, grasp_position_error, max_joint_velocity,
-          kSettlePositionTolerance[0], kSettlePositionTolerance[1],
-          kGraspPositionTolerance, kSettleVelocityTolerance);
+          settlePositionTolerance[0], settlePositionTolerance[1],
+          graspPositionTolerance, settleVelocityTolerance);
       }
 
       if (target_reached) {
+        // A brief continuous settling window filters out transient low-velocity crossings of the goal.
         if (!target_settled_since_valid_) {
           target_settled_since_ = feedback_time;
           target_settled_since_valid_ = true;
-        } else if ((feedback_time - target_settled_since_).seconds() >= kSettleDurationSec) {
+        } else if ((feedback_time - target_settled_since_).seconds() >= settleDurationSec) {
           // Start the twist only after the fingers have reached their gentle grasp position.
           current_state_ = HarvestState::CLOSING_GRIPPER;
           gripper_settled_since_valid_ = false;
@@ -449,9 +477,10 @@ private:
         target_settled_since_valid_ = false;
       }
     } else if (current_state_ == HarvestState::CLOSING_GRIPPER) {
+      // The soft fingers may stop before the commanded closure when they contact a berry.
       const auto steady_now = std::chrono::steady_clock::now();
       const bool close_timed_out =
-        steady_now - finger_action_started_ >= kFingerActionTimeout;
+        steady_now - finger_action_started_ >= fingerActionTimeout;
       if (gripper_reached_target(
           current_positions, current_velocities, kClosedFingerPosition))
       {
@@ -466,7 +495,7 @@ private:
       const bool fingers_settled_at_target =
         gripper_settled_since_valid_ &&
         std::chrono::duration<double>(steady_now - gripper_settled_since_).count() >=
-        kSettleDurationSec;
+        settleDurationSec;
       const bool stopped_at_contact =
         close_timed_out && gripper_is_stationary(current_positions, current_velocities);
 
@@ -496,6 +525,7 @@ private:
         execute_harvest_twist(roll_position->second);
       }
     } else if (current_state_ == HarvestState::TWISTING) {
+      // Verify the whole arm and the finger midpoint; issuing a twist command is not completion.
       constexpr std::array<const char *, 6> all_joint_names = {
         "rail_joint", "base_joint", "shoulder_joint", "elbow_joint",
         "wrist_pitch_joint", "wrist_roll_joint"};
@@ -522,13 +552,14 @@ private:
           i < target_joints_.size() ? target_joints_[i] : twist_target_roll_;
         double error = std::abs(current->second - expected_position);
         if (i > 0) {
+          // Use wrapped angular error here for the same reason as in the approach-state check.
           error = std::abs(std::remainder(current->second - expected_position, 2.0 * kPi));
         }
         const double joint_velocity = std::abs(velocity->second);
         max_position_error = std::max(max_position_error, error);
         max_joint_velocity = std::max(max_joint_velocity, joint_velocity);
-        if (error > kSettlePositionTolerance[i] ||
-            joint_velocity > kSettleVelocityTolerance)
+        if (error > settlePositionTolerance[i] ||
+            joint_velocity > settleVelocityTolerance)
         {
           all_joints_settled = false;
           limiting_joint = all_joint_names[i];
@@ -542,13 +573,14 @@ private:
         const double dy = grasp_point[1] - target_y_;
         const double dz = grasp_point[2] - target_z_;
         grasp_position_error = std::sqrt(dx * dx + dy * dy + dz * dz);
-        if (grasp_position_error > kGraspPositionTolerance) {
+        if (grasp_position_error > graspPositionTolerance) {
           all_joints_settled = false;
           limiting_joint = "grasp_point";
         }
       }
 
       if (all_joints_settled) {
+        // Require continuous settling before releasing the berry to avoid opening during motion.
         if (!twist_settled_since_valid_) {
           twist_settled_since_ = feedback_time;
           twist_settled_since_valid_ = true;
@@ -563,7 +595,7 @@ private:
       }
 
       if (twist_settled_since_valid_ &&
-          (feedback_time - twist_settled_since_).seconds() >= kSettleDurationSec)
+          (feedback_time - twist_settled_since_).seconds() >= settleDurationSec)
       {
         // Release only after the wrist twist is confirmed settled; report completion after opening.
         current_state_ = HarvestState::OPENING_GRIPPER;
@@ -573,6 +605,7 @@ private:
         RCLCPP_INFO(get_logger(), "Wrist twist settled; opening the gripper to finish harvesting.");
       }
     } else if (current_state_ == HarvestState::OPENING_GRIPPER) {
+      // Signal success only after every finger has opened and remained stationary.
       const auto steady_now = std::chrono::steady_clock::now();
       if (gripper_reached_target(current_positions, current_velocities, kOpenFingerPosition)) {
         if (!gripper_settled_since_valid_) {
@@ -586,7 +619,7 @@ private:
       const bool fingers_open_and_settled =
         gripper_settled_since_valid_ &&
         std::chrono::duration<double>(steady_now - gripper_settled_since_).count() >=
-        kSettleDurationSec;
+        settleDurationSec;
       if (fingers_open_and_settled) {
         current_state_ = HarvestState::HARVEST_COMPLETE;
         std_msgs::msg::Bool completion;
@@ -595,7 +628,7 @@ private:
         RCLCPP_INFO(
           get_logger(),
           "Harvest cycle complete: the wrist twist settled and all gripper fingers reopened.");
-      } else if (steady_now - finger_action_started_ >= kFingerActionTimeout) {
+      } else if (steady_now - finger_action_started_ >= fingerActionTimeout) {
         fail_harvest("gripper did not reopen before the open timeout.");
       }
     }
@@ -625,10 +658,12 @@ private:
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr harvest_complete_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr gripper_command_pub_;
+  // ROS time is used for arm settling; steady wall time is used for gripper action deadlines.
   rclcpp::Time target_settled_since_{0, 0, RCL_ROS_TIME};
   rclcpp::Time twist_settled_since_{0, 0, RCL_ROS_TIME};
   std::chrono::steady_clock::time_point finger_action_started_;
   std::chrono::steady_clock::time_point gripper_settled_since_;
+  // Validity flags distinguish an unset timer from a timer started at ROS time zero.
   bool target_settled_since_valid_ = false;
   bool twist_settled_since_valid_ = false;
   bool gripper_settled_since_valid_ = false;
@@ -640,6 +675,7 @@ private:
 
 int main(int argc, char * argv[])
 {
+  // ROS callbacks run serially so harvest state transitions cannot race each other.
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<UniversalWristIKNode>());
   rclcpp::shutdown();

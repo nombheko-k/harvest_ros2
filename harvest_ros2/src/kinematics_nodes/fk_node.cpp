@@ -13,9 +13,9 @@
 
 namespace
 {
-constexpr double kRobotSpawnHeight = 0.025;
-constexpr double kGraspOffset = 0.045;
-constexpr std::array<const char *, 6> kJointNames = {
+constexpr double robotSpawnHeight = 0.025;
+constexpr double graspOffset = 0.045;
+constexpr std::array<const char *, 6> jointNames = {
   "rail_joint", "base_joint", "shoulder_joint", "elbow_joint",
   "wrist_pitch_joint", "wrist_roll_joint"};
 
@@ -180,13 +180,13 @@ private:
     }
 
     const auto & endpoint = msg->points.back();
-    for (size_t joint_index = 0; joint_index < kJointNames.size(); ++joint_index) {
+    for (size_t joint_index = 0; joint_index < jointNames.size(); ++joint_index) {
       const auto joint = std::find(
-        msg->joint_names.begin(), msg->joint_names.end(), kJointNames[joint_index]);
+        msg->joint_names.begin(), msg->joint_names.end(), jointNames[joint_index]);
       if (joint == msg->joint_names.end()) {
         RCLCPP_ERROR(
           get_logger(), "Cannot validate FK endpoint: trajectory is missing joint '%s'.",
-          kJointNames[joint_index]);
+          jointNames[joint_index]);
         return;
       }
       const size_t trajectory_index =
@@ -194,7 +194,7 @@ private:
       if (trajectory_index >= endpoint.positions.size()) {
         RCLCPP_ERROR(
           get_logger(), "Cannot validate FK endpoint: no position for joint '%s'.",
-          kJointNames[joint_index]);
+          jointNames[joint_index]);
         return;
       }
       commanded_endpoint_joints_[joint_index] = endpoint.positions[trajectory_index];
@@ -212,9 +212,9 @@ private:
         joints[msg->name[i]] = msg->position[i];
       }
     }
-    std::array<double, kJointNames.size()> joint_positions{};
-    for (size_t index = 0; index < kJointNames.size(); ++index) {
-      const auto joint = joints.find(kJointNames[index]);
+    std::array<double, jointNames.size()> joint_positions{};
+    for (size_t index = 0; index < jointNames.size(); ++index) {
+      const auto joint = joints.find(jointNames[index]);
       if (joint == joints.end()) {
         RCLCPP_WARN_THROTTLE(
           get_logger(), *get_clock(), 5000,
@@ -235,9 +235,9 @@ private:
 
     geometry_msgs::msg::PoseStamped grasp_pose = pose;
     // Finger midpoint lies 45 mm along the tool's local +X axis from the tool mount.
-    grasp_pose.pose.position.x += kGraspOffset * T_total.m[0][0];
-    grasp_pose.pose.position.y += kGraspOffset * T_total.m[1][0];
-    grasp_pose.pose.position.z += kGraspOffset * T_total.m[2][0];
+    grasp_pose.pose.position.x += graspOffset * T_total.m[0][0];
+    grasp_pose.pose.position.y += graspOffset * T_total.m[1][0];
+    grasp_pose.pose.position.z += graspOffset * T_total.m[2][0];
 
     // Publish both tool origin and the actual point IK aims at for grasping.
     pose_pub_->publish(pose);
@@ -254,11 +254,11 @@ private:
     }
   }
 
-  Matrix4 forward_transform(const std::array<double, kJointNames.size()> & joints) const
+  Matrix4 forward_transform(const std::array<double, jointNames.size()> & joints) const
   {
     // This chain mirrors the URDF origins, joint axes, and fixed tool offsets.
     const Matrix4 T_rail =
-      Matrix4::translation(joints[0], 0.0, kRobotSpawnHeight + 0.025);
+      Matrix4::translation(joints[0], 0.0, robotSpawnHeight + 0.025);
     const Matrix4 T_base =
       Matrix4::translation(0.0, 0.0, 0.108) * Matrix4::rotationZ(joints[1]);
     const Matrix4 T_shoulder =
@@ -282,9 +282,9 @@ private:
     }
 
     const Matrix4 transform = forward_transform(commanded_endpoint_joints_);
-    const double grasp_x = transform.m[0][3] + kGraspOffset * transform.m[0][0];
-    const double grasp_y = transform.m[1][3] + kGraspOffset * transform.m[1][0];
-    const double grasp_z = transform.m[2][3] + kGraspOffset * transform.m[2][0];
+    const double grasp_x = transform.m[0][3] + graspOffset * transform.m[0][0];
+    const double grasp_y = transform.m[1][3] + graspOffset * transform.m[1][0];
+    const double grasp_z = transform.m[2][3] + graspOffset * transform.m[2][0];
     const double dx = grasp_x - latest_target_.pose.position.x;
     const double dy = grasp_y - latest_target_.pose.position.y;
     const double dz = grasp_z - latest_target_.pose.position.z;
@@ -302,7 +302,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr grasp_pub_;
   geometry_msgs::msg::PoseStamped latest_target_;
-  std::array<double, kJointNames.size()> commanded_endpoint_joints_{};
+  std::array<double, jointNames.size()> commanded_endpoint_joints_{};
   bool have_target_ = false;
   bool have_commanded_endpoint_ = false;
 };
