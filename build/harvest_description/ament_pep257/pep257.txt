@@ -2,6 +2,8 @@
  - /opt/ros/jazzy/bin/ament_pep257 --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml
 
 checking ./launch/display.launch.py
+checking ./launch/gazebo.launch.py
+checking ./scripts/move_robot.py
 No problems found
 
 

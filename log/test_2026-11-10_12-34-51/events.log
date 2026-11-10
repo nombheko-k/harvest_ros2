@@ -1,0 +1,264 @@
+[0.000000] (-) TimerEvent: {}
+[0.000254] (harvest_description) JobQueued: {'identifier': 'harvest_description', 'dependencies': OrderedDict({'harvest_description': '/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description'})}
+[0.000454] (harvest_ros2) JobQueued: {'identifier': 'harvest_ros2', 'dependencies': OrderedDict({'harvest_description': '/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description', 'harvest_ros2': '/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2'})}
+[0.002487] (harvest_description) JobStarted: {'identifier': 'harvest_description'}
+[0.097393] (-) TimerEvent: {}
+[0.145703] (harvest_description) Command: {'cmd': ['/usr/bin/ctest', '-C', 'Release', '-D', 'ExperimentalTest', '--no-compress-output', '-V', '--force-new-ctest-process'], 'cwd': '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib', 'LESSOPEN': '| /usr/bin/lesspipe %s', 'AUTO_LOCAL_ROUTING': 'false', 'RUBBER_DUCK_AGENT': 'true', 'COPILOT_EXP_COPILOT_CLI_EXECUTION_SUBAGENT': 'false', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'AI_AGENT': 'github_copilot_vscode_agent', 'NODE_EXTRA_CA_CERTS': '/home/usernom-b/.vscode-server/data/certificates/certificates-5b3dc0640b2ab1ca74defb62a559a0a7e0063a2b14b27323ee89e5e1af05eebe.pem', 'USER': 'usernom-b', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'GIT_ASKPASS': '', 'SHLVL': '0', 'LIBGL_ALWAYS_SOFTWARE': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/usernom-b', 'GIT_CONFIG_COUNT': '3', 'COPILOT_CLI_RUN_AS_NODE': '1', 'ROS_PYTHON_VERSION': '3', 'COPILOT_CLI': '1', 'SSH_ASKPASS': '', 'ANTHROPIC_ADVISOR': 'false', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'WSL_DISTRO_NAME': 'Ubuntu', 'COPILOT_HOME': '/home/usernom-b/.copilot', 'GIT_OPTIONAL_LOCKS': '0', 'WAYLAND_DISPLAY': 'wayland-0', 'GCM_INTERACTIVE': 'Never', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 'usernom-b', 'NAME': 'NomB', '_': '/usr/bin/colcon', 'WSL_INTEROP': '/run/WSL/1362_interop', 'PULSE_SERVER': 'unix:/mnt/wslg/PulseServer', 'ROS_VERSION': '2', 'SKILL_CHAR_BUDGET': '30000', 'TERM': 'xterm-256color', 'WINML_LOCAL_MODELS': 'false', 'GIT_CONFIG_VALUE_0': 'explicit', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/MATLAB/R2026a/runtime/win64:/mnt/c/Program Files/MATLAB/R2026a/bin:/mnt/c/Program Files/MATLAB/R2024b/runtime/win64:/mnt/c/Program Files/MATLAB/R2024b/bin:/mnt/c/Program Files (x86)/CODESYS/APInstaller/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/WSL/:/mnt/c/Users/user/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/user/AppData/Local/Programs/MiKTeX/miktex/bin/x64/:/mnt/c/Users/user/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/user/.dotnet/tools:/mnt/c/Users/user/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/user/AppData/Local/Python/bin:/mnt/c/Users/user/AppData/Local/Python/pythoncore-3.14-64/Scripts:/mnt/c/Users/user/AppData/Local/Programs/Microsoft VS Code/bin/copilot-shim:/snap/bin:/home/usernom-b/.vscode-server/bin/a717861c07586a53d83b80d742cd3f59b20a6273/node_modules/@vscode/ripgrep-universal/bin/linux-x64:/home/usernom-b/.vscode-server/bin/a717861c07586a53d83b80d742cd3f59b20a6273/node_modules/@github/copilot-sdk-linux-x64/ripgrep/bin/linux-x64', 'GIT_CONFIG_VALUE_1': 'never', 'CLAUDE_CODE_DISABLE_PRECOMPACT_SKIP': '1', 'GIT_CONFIG_VALUE_2': 'false', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'AMENT_PREFIX_PATH': '/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description:/opt/ros/jazzy', 'COPILOT_AGENT_SESSION_ID': 'd2169e95-b500-4881-805f-c4cd95f7a0b7', 'SHELL': '/bin/bash', 'COPILOT_RUNTIME_PROCESS_FILE_LOGGING': '1', 'GIT_TERMINAL_PROMPT': '0', 'GIT_CONFIG_KEY_0': 'safe.bareRepository', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GIT_CONFIG_KEY_1': 'credential.interactive', 'GIT_CONFIG_KEY_2': 'core.fsmonitor', 'COPILOT_MCP_APPS': 'true', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'PWD': '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description', 'AUTO_APPROVAL': 'true', 'QT_QPA_PLATFORM': 'xcb', 'XDG_DATA_DIRS': '/usr/local/share:/usr/share:/var/lib/snapd/desktop', 'COPILOT_ENABLE_BUILTIN_GITHUB_MCP': 'true', 'PYTHONPATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'OGRE_RTT_MODE': 'Copy', 'COPILOT_EXP_COPILOT_CLI_EXECUTION_SUBAGENT_MODEL': 'gpt-5.6-luna', 'COLCON': '1', 'WSL2_GUI_APPS_ENABLED': '1', 'COPILOT_CLI_ENABLED_FEATURE_FLAGS': 'SHELL_SPAWN_BACKEND,DYNAMIC_AUTO_TIERS', 'HOSTTYPE': 'x86_64', 'CMAKE_PREFIX_PATH': '/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description:/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor', 'WSLENV': 'VSCODE_WSL_EXT_LOCATION/up'}), 'shell': False}
+[0.162557] (harvest_description) StdoutLine: {'line': b'UpdateCTestConfiguration  from :/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini\n'}
+[0.163978] (harvest_description) StdoutLine: {'line': b'Parse Config file:/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini\n'}
+[0.164859] (harvest_description) StdoutLine: {'line': b'   Site: NomB\n'}
+[0.165080] (harvest_description) StdoutLine: {'line': b'   Build name: (empty)\n'}
+[0.165644] (harvest_description) StdoutLine: {'line': b' Add coverage exclude regular expressions.\n'}
+[0.166363] (harvest_description) StdoutLine: {'line': b'Create new tag: 20261110-1034 - Experimental\n'}
+[0.167019] (harvest_description) StdoutLine: {'line': b'UpdateCTestConfiguration  from :/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini\n'}
+[0.167192] (harvest_description) StdoutLine: {'line': b'Parse Config file:/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini\n'}
+[0.167529] (harvest_description) StdoutLine: {'line': b'Test project /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description\n'}
+[0.167802] (harvest_description) StdoutLine: {'line': b'Constructing a list of tests\n'}
+[0.167925] (harvest_description) StdoutLine: {'line': b'Done constructing a list of tests\n'}
+[0.168183] (harvest_description) StdoutLine: {'line': b'Updating test list for fixtures\n'}
+[0.168505] (harvest_description) StdoutLine: {'line': b'Added 0 tests to meet fixture requirements\n'}
+[0.168686] (harvest_description) StdoutLine: {'line': b'Checking test dependency graph...\n'}
+[0.168855] (harvest_description) StdoutLine: {'line': b'Checking test dependency graph end\n'}
+[0.168992] (harvest_description) StdoutLine: {'line': b'test 1\n'}
+[0.169097] (harvest_description) StdoutLine: {'line': b'    Start 1: flake8\n'}
+[0.169198] (harvest_description) StdoutLine: {'line': b'\n'}
+[0.169301] (harvest_description) StdoutLine: {'line': b'1: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_flake8/flake8.txt" "--command" "/opt/ros/jazzy/bin/ament_flake8" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml"\n'}
+[0.169413] (harvest_description) StdoutLine: {'line': b'1: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description\n'}
+[0.169514] (harvest_description) StdoutLine: {'line': b'1: Test timeout computed to be: 60\n'}
+[0.197686] (-) TimerEvent: {}
+[0.298223] (-) TimerEvent: {}
+[0.343947] (harvest_description) StdoutLine: {'line': b"1: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':\n"}
+[0.344519] (harvest_description) StdoutLine: {'line': b'1:  - /opt/ros/jazzy/bin/ament_flake8 --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml\n'}
+[0.398500] (-) TimerEvent: {}
+[0.498991] (-) TimerEvent: {}
+[0.599423] (-) TimerEvent: {}
+[0.699862] (-) TimerEvent: {}
+[0.800439] (-) TimerEvent: {}
+[0.900878] (-) TimerEvent: {}
+[1.001298] (-) TimerEvent: {}
+[1.101802] (-) TimerEvent: {}
+[1.183446] (harvest_description) StdoutLine: {'line': b'1: from ament_index_python.packages import get_package_share_directory\n'}
+[1.183793] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.183935] (harvest_description) StdoutLine: {'line': b"1:         Command(['xacro ', model]), \n"}
+[1.184049] (harvest_description) StdoutLine: {'line': b'1:                                    ^\n'}
+[1.184154] (harvest_description) StdoutLine: {'line': b'1: from ament_index_python.packages import get_package_prefix, get_package_share_directory\n'}
+[1.184259] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.184354] (harvest_description) StdoutLine: {'line': b'1: from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument\n'}
+[1.184448] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.184543] (harvest_description) StdoutLine: {'line': b'1: from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument\n'}
+[1.184643] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.184741] (harvest_description) StdoutLine: {'line': b'1: from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument\n'}
+[1.184838] (harvest_description) StdoutLine: {'line': b'1:                                                                                                    ^\n'}
+[1.184933] (harvest_description) StdoutLine: {'line': b'1: def default_metrics_file():\n'}
+[1.185099] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.185208] (harvest_description) StdoutLine: {'line': b'1: def generate_launch_description():\n'}
+[1.185311] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.185412] (harvest_description) StdoutLine: {'line': b"1:         description='CSV metrics path; defaults to the harvest_ros2 package directory when available'\n"}
+[1.185513] (harvest_description) StdoutLine: {'line': b'1:                                                                                                    ^\n'}
+[1.185614] (harvest_description) StdoutLine: {'line': b'1:     \n'}
+[1.185712] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.185814] (harvest_description) StdoutLine: {'line': b"1:         Command(['xacro ', xacro_file]), \n"}
+[1.186059] (harvest_description) StdoutLine: {'line': b'1:                                         ^\n'}
+[1.186182] (harvest_description) StdoutLine: {'line': b"1:     package='harvest_ros2',\n"}
+[1.186289] (harvest_description) StdoutLine: {'line': b'1:     ^\n'}
+[1.186385] (harvest_description) StdoutLine: {'line': b"1:     executable='gravity_compensation_node',\n"}
+[1.186478] (harvest_description) StdoutLine: {'line': b'1:     ^\n'}
+[1.186614] (harvest_description) StdoutLine: {'line': b"1:     output='screen',\n"}
+[1.186747] (harvest_description) StdoutLine: {'line': b'1:     ^\n'}
+[1.186853] (harvest_description) StdoutLine: {'line': b'1:     parameters=[{\n'}
+[1.186953] (harvest_description) StdoutLine: {'line': b'1:     ^\n'}
+[1.187107] (harvest_description) StdoutLine: {'line': b"1:         # Approximate each pitch joint's gravity coefficient from downstream URDF masses and lever arms.\n"}
+[1.187238] (harvest_description) StdoutLine: {'line': b'1:                                                                                                    ^\n'}
+[1.187343] (harvest_description) StdoutLine: {'line': b'1: from builtin_interfaces.msg import Duration\n'}
+[1.187443] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.187543] (harvest_description) StdoutLine: {'line': b'1: class HarvesterController(Node):\n'}
+[1.187642] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.187741] (harvest_description) StdoutLine: {'line': b'1:             JointTrajectory, \n'}
+[1.187836] (harvest_description) StdoutLine: {'line': b'1:                             ^\n'}
+[1.187936] (harvest_description) StdoutLine: {'line': b"1:             '/arm_controller/joint_trajectory', \n"}
+[1.188032] (harvest_description) StdoutLine: {'line': b'1:                                                ^\n'}
+[1.188127] (harvest_description) StdoutLine: {'line': b"1:             self.get_logger().info(f'Gazebo detected! Sending trajectory goal...')\n"}
+[1.188227] (harvest_description) StdoutLine: {'line': b'1:                                    ^\n'}
+[1.188327] (harvest_description) StdoutLine: {'line': b"1:                 'rail_joint', 'base_joint', 'shoulder_joint', \n"}
+[1.188426] (harvest_description) StdoutLine: {'line': b'1:                                                              ^\n'}
+[1.188524] (harvest_description) StdoutLine: {'line': b'1:             point.time_from_start = Duration(sec=4, nanosec=0) # Take 4 seconds\n'}
+[1.188625] (harvest_description) StdoutLine: {'line': b'1:                                                               ^\n'}
+[1.188724] (harvest_description) StdoutLine: {'line': b'1: def main(args=None):\n'}
+[1.188822] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.188921] (harvest_description) StdoutLine: {'line': b"1: if __name__ == '__main__':\n"}
+[1.189085] (harvest_description) StdoutLine: {'line': b'1: ^\n'}
+[1.189208] (harvest_description) StdoutLine: {'line': b'1: 4     E122 continuation line missing indentation or outdented\n'}
+[1.189341] (harvest_description) StdoutLine: {'line': b'1: 1     E261 at least two spaces before inline comment\n'}
+[1.189449] (harvest_description) StdoutLine: {'line': b'1: 4     E302 expected 2 blank lines, found 1\n'}
+[1.189554] (harvest_description) StdoutLine: {'line': b'1: 1     E305 expected 2 blank lines after class or function definition, found 1\n'}
+[1.189655] (harvest_description) StdoutLine: {'line': b'1: 3     E501 line too long (120 > 99 characters)\n'}
+[1.189759] (harvest_description) StdoutLine: {'line': b'1: 1     F541 f-string is missing placeholders\n'}
+[1.189860] (harvest_description) StdoutLine: {'line': b"1: 2     I100 Import statements are in the wrong order. 'from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument' should be before 'from launch.substitutions import LaunchConfiguration'\n"}
+[1.190003] (harvest_description) StdoutLine: {'line': b'1: 1     I101 Imported names are in the wrong order. Should be DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable\n'}
+[1.190109] (harvest_description) StdoutLine: {'line': b"1: 2     I201 Missing newline between import groups. 'from ament_index_python.packages import get_package_share_directory' is identified as Third Party and 'import os' is identified as Stdlib.\n"}
+[1.190219] (harvest_description) StdoutLine: {'line': b'1: 5     W291 trailing whitespace\n'}
+[1.190323] (harvest_description) StdoutLine: {'line': b'1: 1     W293 blank line contains whitespace\n'}
+[1.190424] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.190525] (harvest_description) StdoutLine: {'line': b"1: ./launch/display.launch.py:2:1: I201 Missing newline between import groups. 'from ament_index_python.packages import get_package_share_directory' is identified as Third Party and 'import os' is identified as Stdlib.\n"}
+[1.190635] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.190738] (harvest_description) StdoutLine: {'line': b'1: ./launch/display.launch.py:24:36: W291 trailing whitespace\n'}
+[1.190842] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.190944] (harvest_description) StdoutLine: {'line': b"1: ./launch/gazebo.launch.py:3:1: I201 Missing newline between import groups. 'from ament_index_python.packages import get_package_prefix, get_package_share_directory' is identified as Third Party and 'from pathlib import Path' is identified as Stdlib.\n"}
+[1.191120] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.191231] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:6:1: I101 Imported names are in the wrong order. Should be DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable\n'}
+[1.191348] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.191482] (harvest_description) StdoutLine: {'line': b"1: ./launch/gazebo.launch.py:6:1: I100 Import statements are in the wrong order. 'from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument' should be before 'from launch.substitutions import LaunchConfiguration'\n"}
+[1.191690] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.191808] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:6:100: E501 line too long (120 > 99 characters)\n'}
+[1.191918] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.197682] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:14:1: E302 expected 2 blank lines, found 1\n'}
+[1.198910] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.199922] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:26:1: E302 expected 2 blank lines, found 1\n'}
+[1.200239] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.200449] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:55:100: E501 line too long (101 > 99 characters)\n'}
+[1.200690] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.202321] (-) TimerEvent: {}
+[1.202395] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:70:1: W293 blank line contains whitespace\n'}
+[1.202886] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.203116] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:73:41: W291 trailing whitespace\n'}
+[1.203310] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.203499] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:151:5: E122 continuation line missing indentation or outdented\n'}
+[1.203665] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.203818] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:152:5: E122 continuation line missing indentation or outdented\n'}
+[1.203975] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.204135] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:153:5: E122 continuation line missing indentation or outdented\n'}
+[1.204433] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.204658] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:154:5: E122 continuation line missing indentation or outdented\n'}
+[1.204915] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.205253] (harvest_description) StdoutLine: {'line': b'1: ./launch/gazebo.launch.py:155:100: E501 line too long (104 > 99 characters)\n'}
+[1.205465] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.205642] (harvest_description) StdoutLine: {'line': b"1: ./scripts/move_robot.py:5:1: I100 Import statements are in the wrong order. 'from builtin_interfaces.msg import Duration' should be before 'from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint'\n"}
+[1.205822] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.206171] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:7:1: E302 expected 2 blank lines, found 1\n'}
+[1.206434] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.206629] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:14:29: W291 trailing whitespace\n'}
+[1.206813] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.206992] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:15:48: W291 trailing whitespace\n'}
+[1.207170] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.207336] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:31:36: F541 f-string is missing placeholders\n'}
+[1.207506] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.207668] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:39:62: W291 trailing whitespace\n'}
+[1.207837] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.208022] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:46:63: E261 at least two spaces before inline comment\n'}
+[1.208307] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.208670] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:59:1: E302 expected 2 blank lines, found 1\n'}
+[1.208963] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.209241] (harvest_description) StdoutLine: {'line': b'1: ./scripts/move_robot.py:67:1: E305 expected 2 blank lines after class or function definition, found 1\n'}
+[1.209564] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.209787] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.210137] (harvest_description) StdoutLine: {'line': b'1: 3 files checked\n'}
+[1.210532] (harvest_description) StdoutLine: {'line': b'1: 25 errors\n'}
+[1.210750] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.210921] (harvest_description) StdoutLine: {'line': b"1: 'E'-type errors: 13\n"}
+[1.211080] (harvest_description) StdoutLine: {'line': b"1: 'F'-type errors: 1\n"}
+[1.211210] (harvest_description) StdoutLine: {'line': b"1: 'I'-type errors: 5\n"}
+[1.211351] (harvest_description) StdoutLine: {'line': b"1: 'W'-type errors: 6\n"}
+[1.211621] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.212193] (harvest_description) StdoutLine: {'line': b'1: Checked files:\n'}
+[1.213171] (harvest_description) StdoutLine: {'line': b'1: \n'}
+[1.214273] (harvest_description) StdoutLine: {'line': b'1: * ./launch/display.launch.py\n'}
+[1.214712] (harvest_description) StdoutLine: {'line': b'1: * ./launch/gazebo.launch.py\n'}
+[1.215137] (harvest_description) StdoutLine: {'line': b'1: * ./scripts/move_robot.py\n'}
+[1.275852] (harvest_description) StdoutLine: {'line': b'1: -- run_test.py: return code 1\n'}
+[1.276436] (harvest_description) StdoutLine: {'line': b"1: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml'\n"}
+[1.299222] (harvest_description) StdoutLine: {'line': b'1/4 Test #1: flake8 ...........................***Failed    1.13 sec\n'}
+[1.300271] (harvest_description) StdoutLine: {'line': b'test 2\n'}
+[1.300684] (harvest_description) StdoutLine: {'line': b'    Start 2: lint_cmake\n'}
+[1.300997] (harvest_description) StdoutLine: {'line': b'\n'}
+[1.301324] (harvest_description) StdoutLine: {'line': b'2: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_lint_cmake/lint_cmake.txt" "--command" "/opt/ros/jazzy/bin/ament_lint_cmake" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml"\n'}
+[1.301734] (harvest_description) StdoutLine: {'line': b'2: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description\n'}
+[1.302131] (harvest_description) StdoutLine: {'line': b'2: Test timeout computed to be: 60\n'}
+[1.302373] (-) TimerEvent: {}
+[1.402659] (-) TimerEvent: {}
+[1.460397] (harvest_description) StdoutLine: {'line': b"2: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':\n"}
+[1.461001] (harvest_description) StdoutLine: {'line': b'2:  - /opt/ros/jazzy/bin/ament_lint_cmake --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml\n'}
+[1.502912] (-) TimerEvent: {}
+[1.603311] (-) TimerEvent: {}
+[1.669808] (harvest_description) StdoutLine: {'line': b'2: \n'}
+[1.670670] (harvest_description) StdoutLine: {'line': b'2: No problems found\n'}
+[1.702334] (harvest_description) StdoutLine: {'line': b'2: -- run_test.py: return code 0\n'}
+[1.703625] (harvest_description) StdoutLine: {'line': b"2: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml'\n"}
+[1.704161] (-) TimerEvent: {}
+[1.736302] (harvest_description) StdoutLine: {'line': b'2/4 Test #2: lint_cmake .......................   Passed    0.44 sec\n'}
+[1.736933] (harvest_description) StdoutLine: {'line': b'test 3\n'}
+[1.737181] (harvest_description) StdoutLine: {'line': b'    Start 3: pep257\n'}
+[1.737359] (harvest_description) StdoutLine: {'line': b'\n'}
+[1.737528] (harvest_description) StdoutLine: {'line': b'3: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_pep257/pep257.txt" "--command" "/opt/ros/jazzy/bin/ament_pep257" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml"\n'}
+[1.737703] (harvest_description) StdoutLine: {'line': b'3: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description\n'}
+[1.738059] (harvest_description) StdoutLine: {'line': b'3: Test timeout computed to be: 60\n'}
+[1.804573] (-) TimerEvent: {}
+[1.905124] (-) TimerEvent: {}
+[1.918293] (harvest_description) StdoutLine: {'line': b"3: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':\n"}
+[1.918780] (harvest_description) StdoutLine: {'line': b'3:  - /opt/ros/jazzy/bin/ament_pep257 --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml\n'}
+[2.005348] (-) TimerEvent: {}
+[2.105724] (-) TimerEvent: {}
+[2.206005] (-) TimerEvent: {}
+[2.268722] (harvest_description) StdoutLine: {'line': b'3: checking ./launch/display.launch.py\n'}
+[2.269337] (harvest_description) StdoutLine: {'line': b'3: checking ./launch/gazebo.launch.py\n'}
+[2.269691] (harvest_description) StdoutLine: {'line': b'3: checking ./scripts/move_robot.py\n'}
+[2.269946] (harvest_description) StdoutLine: {'line': b'3: No problems found\n'}
+[2.306269] (-) TimerEvent: {}
+[2.312441] (harvest_description) StdoutLine: {'line': b'3: -- run_test.py: return code 0\n'}
+[2.313068] (harvest_description) StdoutLine: {'line': b"3: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml'\n"}
+[2.336571] (harvest_description) StdoutLine: {'line': b'3/4 Test #3: pep257 ...........................   Passed    0.60 sec\n'}
+[2.337625] (harvest_description) StdoutLine: {'line': b'test 4\n'}
+[2.338105] (harvest_description) StdoutLine: {'line': b'    Start 4: xmllint\n'}
+[2.338461] (harvest_description) StdoutLine: {'line': b'\n'}
+[2.338730] (harvest_description) StdoutLine: {'line': b'4: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_xmllint/xmllint.txt" "--command" "/opt/ros/jazzy/bin/ament_xmllint" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml"\n'}
+[2.338917] (harvest_description) StdoutLine: {'line': b'4: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description\n'}
+[2.339154] (harvest_description) StdoutLine: {'line': b'4: Test timeout computed to be: 60\n'}
+[2.406535] (-) TimerEvent: {}
+[2.490075] (harvest_description) StdoutLine: {'line': b"4: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':\n"}
+[2.490587] (harvest_description) StdoutLine: {'line': b'4:  - /opt/ros/jazzy/bin/ament_xmllint --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml\n'}
+[2.506698] (-) TimerEvent: {}
+[2.607083] (-) TimerEvent: {}
+[2.707524] (-) TimerEvent: {}
+[2.807932] (-) TimerEvent: {}
+[2.908383] (-) TimerEvent: {}
+[3.008969] (-) TimerEvent: {}
+[3.109344] (-) TimerEvent: {}
+[3.209759] (-) TimerEvent: {}
+[3.310295] (-) TimerEvent: {}
+[3.410812] (-) TimerEvent: {}
+[3.511261] (-) TimerEvent: {}
+[3.611632] (-) TimerEvent: {}
+[3.712007] (-) TimerEvent: {}
+[3.812443] (-) TimerEvent: {}
+[3.912934] (-) TimerEvent: {}
+[3.949198] (harvest_description) StdoutLine: {'line': b"4: File 'package.xml' is valid\n"}
+[3.950474] (harvest_description) StdoutLine: {'line': b'4: \n'}
+[3.950930] (harvest_description) StdoutLine: {'line': b'4: No problems found\n'}
+[3.981111] (harvest_description) StdoutLine: {'line': b'4: -- run_test.py: return code 0\n'}
+[3.982098] (harvest_description) StdoutLine: {'line': b"4: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml'\n"}
+[4.006261] (harvest_description) StdoutLine: {'line': b'4/4 Test #4: xmllint ..........................   Passed    1.67 sec\n'}
+[4.007626] (harvest_description) StdoutLine: {'line': b'\n'}
+[4.008111] (harvest_description) StdoutLine: {'line': b'75% tests passed, 1 tests failed out of 4\n'}
+[4.008990] (harvest_description) StdoutLine: {'line': b'\n'}
+[4.009313] (harvest_description) StdoutLine: {'line': b'Label Time Summary:\n'}
+[4.009500] (harvest_description) StdoutLine: {'line': b'flake8        =   1.13 sec*proc (1 test)\n'}
+[4.009670] (harvest_description) StdoutLine: {'line': b'lint_cmake    =   0.44 sec*proc (1 test)\n'}
+[4.010084] (harvest_description) StdoutLine: {'line': b'linter        =   3.84 sec*proc (4 tests)\n'}
+[4.010269] (harvest_description) StdoutLine: {'line': b'pep257        =   0.60 sec*proc (1 test)\n'}
+[4.010430] (harvest_description) StdoutLine: {'line': b'xmllint       =   1.67 sec*proc (1 test)\n'}
+[4.010585] (harvest_description) StdoutLine: {'line': b'\n'}
+[4.010821] (harvest_description) StdoutLine: {'line': b'Total Test time (real) =   3.84 sec\n'}
+[4.011096] (harvest_description) StdoutLine: {'line': b'\n'}
+[4.011268] (harvest_description) StdoutLine: {'line': b'The following tests FAILED:\n'}
+[4.011421] (harvest_description) StdoutLine: {'line': b'\t  1 - flake8 (Failed)\n'}
+[4.013058] (-) TimerEvent: {}
+[4.014808] (harvest_description) StderrLine: {'line': b'Errors while running CTest\n'}
+[4.015297] (harvest_description) StderrLine: {'line': b'Output from these tests are in: /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/Testing/Temporary/LastTest.log\n'}
+[4.015440] (harvest_description) StderrLine: {'line': b'Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.\n'}
+[4.026397] (harvest_description) CommandEnded: {'returncode': 8}
+[4.032515] (harvest_description) TestFailure: {'identifier': 'harvest_description'}
+[4.032942] (harvest_description) JobEnded: {'identifier': 'harvest_description', 'rc': 0}
+[4.037320] (harvest_ros2) JobStarted: {'identifier': 'harvest_ros2'}
+[4.113312] (-) TimerEvent: {}
+[4.213741] (-) TimerEvent: {}
+[4.288275] (harvest_ros2) JobEnded: {'identifier': 'harvest_ros2', 'rc': 0}
+[4.290879] (-) EventReactorShutdown: {}

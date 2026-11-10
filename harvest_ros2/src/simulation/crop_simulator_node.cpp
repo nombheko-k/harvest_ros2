@@ -312,9 +312,7 @@ private:
         << "<geometry><cylinder><radius>0.002</radius><length>0.016</length></cylinder></geometry>"
         << "<material><ambient>0.08 0.35 0.05 1.0</ambient>"
         << "<diffuse>0.08 0.35 0.05 1.0</diffuse></material></visual>"
-        << "<collision name='collision'><geometry><sphere><radius>"
-        << kCropRadius
-        << "</radius></sphere></geometry></collision>"
+        // The target is the fruit center; a solid sphere here blocks the gripper from reaching it.
         << "</link></model></sdf>";
     return sdf.str();
   }
@@ -363,9 +361,18 @@ private:
         }
         RCLCPP_INFO(get_logger(), "Gazebo spawned crop object '%s'.", name.c_str());
         write_metrics_row("single_crop_spawned", "single_crop_spawned", "pending");
-        target_pub_->publish(*msg);
+        latch_and_publish_target(*msg);
         RCLCPP_INFO(get_logger(), "Sent strawberry pose to IK on /harvest_target_pose.");
       });
+  }
+
+  void latch_and_publish_target(const geometry_msgs::msg::PoseStamped & target)
+  {
+    // The simulator knows the berry's world pose exactly; retain it when the camera loses sight.
+    latched_target_ = target;
+    latched_target_.header.stamp = now();
+    latched_target_.header.frame_id = "world";
+    target_pub_->publish(latched_target_);
   }
 
   void handle_start_cluster(const std_msgs::msg::Empty::SharedPtr)
@@ -406,6 +413,7 @@ private:
     cluster_targets_ = generate_cluster();
     next_spawn_index_ = 0;
     current_target_index_ = 0;
+    latched_target_ = geometry_msgs::msg::PoseStamped{};
     cleared_count_ = 0;
     target_detected_ = false;
     detection_wait_complete_ = false;
@@ -530,6 +538,7 @@ private:
     const std::string name = cluster_targets_[--cleanup_index_].name;
     auto request = std::make_shared<ros_gz_interfaces::srv::DeleteEntity::Request>();
     request->entity.name = name;
+    request->entity.type = ros_gz_interfaces::msg::Entity::MODEL;
     delete_client_->async_send_request(
       request,
       [this, name](
@@ -563,7 +572,8 @@ private:
     target_msg.header.frame_id = "world";
     target_msg.pose = cluster_targets_[current_target_index_].pose;
     waiting_for_harvest_ = true;
-    target_pub_->publish(target_msg);
+    // Camera visibility selects the crop; its known world pose is then latched for the full move.
+    latch_and_publish_target(target_msg);
     write_metrics_row("target_commanded", "moving_to_target", "pending");
     RCLCPP_INFO(
       get_logger(), "Target %zu/%zu: '%s' at (%.3f, %.3f, %.3f).",
@@ -737,6 +747,7 @@ private:
     const auto & target = cluster_targets_[current_target_index_];
     auto request = std::make_shared<ros_gz_interfaces::srv::DeleteEntity::Request>();
     request->entity.name = target.name;
+    request->entity.type = ros_gz_interfaces::msg::Entity::MODEL;
     delete_pending_ = true;
     delete_client_->async_send_request(
       request,
@@ -972,6 +983,7 @@ private:
   std::array<double, 6> cluster_peak_error_{};
   std::array<double, 6> cluster_squared_error_sum_{};
   std::array<size_t, 6> cluster_sample_count_{};
+  geometry_msgs::msg::PoseStamped latched_target_;
 
   rclcpp::Client<ros_gz_interfaces::srv::SpawnEntity>::SharedPtr spawn_client_;
   rclcpp::Client<ros_gz_interfaces::srv::DeleteEntity>::SharedPtr delete_client_;

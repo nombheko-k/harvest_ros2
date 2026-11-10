@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/fk_node.dir/src/fk_node.cpp.o"
-  "CMakeFiles/fk_node.dir/src/fk_node.cpp.o.d"
+  "CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o"
+  "CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o.d"
   "fk_node"
   "fk_node.pdb"
 )

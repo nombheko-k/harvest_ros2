@@ -1,5 +1,8 @@
 /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/lib/harvest_ros2/fk_node
 /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/lib/harvest_ros2/ik_node
+/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/lib/harvest_ros2/trajectory_planner_node
+/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/lib/harvest_ros2/gravity_compensation_node
+/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/lib/harvest_ros2/crop_simulator_node
 /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/share/ament_index/resource_index/package_run_dependencies/harvest_ros2
 /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/share/ament_index/resource_index/parent_prefix_path/harvest_ros2
 /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_ros2/share/harvest_ros2/environment/ament_prefix_path.sh

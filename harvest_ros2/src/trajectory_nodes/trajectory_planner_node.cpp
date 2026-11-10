@@ -194,16 +194,34 @@ private:
         std::array<double, NUM_JOINTS> Jmax_orig = {1.2, 1.5, 1.5, 3.0, 4.0, 4.0};
 
         std::array<double, NUM_JOINTS> current_positions = latest_joint_positions_;
-        std::array<double, NUM_JOINTS> goal_positions = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        // Partial targets hold omitted joints at their latest measured positions.
+        std::array<double, NUM_JOINTS> goal_positions = current_positions;
 
-        // Resolve each IK target by joint name so message order cannot silently retarget axes.
+        if (raw_msg->joint_names.empty()) {
+            RCLCPP_ERROR(this->get_logger(), "Incoming IK target contains no joint names.");
+            return;
+        }
+        for (size_t target_index = 0; target_index < raw_msg->joint_names.size(); ++target_index) {
+            const auto & target_name = raw_msg->joint_names[target_index];
+            if (std::find(smooth_msg.joint_names.begin(), smooth_msg.joint_names.end(),
+                          target_name) == smooth_msg.joint_names.end()) {
+                RCLCPP_ERROR(this->get_logger(), "Incoming IK target contains unknown joint '%s'.",
+                             target_name.c_str());
+                return;
+            }
+            if (target_index >= raw_msg->points[0].positions.size()) {
+                RCLCPP_ERROR(this->get_logger(), "Incoming IK target has no position for joint '%s'.",
+                             target_name.c_str());
+                return;
+            }
+        }
+
+        // Resolve targets by name so message order cannot silently retarget axes.
         for (size_t i = 0; i < NUM_JOINTS; ++i) {
             auto target_joint = std::find(raw_msg->joint_names.begin(), raw_msg->joint_names.end(),
                                           smooth_msg.joint_names[i]);
             if (target_joint == raw_msg->joint_names.end()) {
-                RCLCPP_ERROR(this->get_logger(), "Incoming IK target is missing joint '%s'.",
-                             smooth_msg.joint_names[i].c_str());
-                return;
+                continue;
             }
             const size_t target_index = std::distance(raw_msg->joint_names.begin(), target_joint);
             if (target_index >= raw_msg->points[0].positions.size()) {

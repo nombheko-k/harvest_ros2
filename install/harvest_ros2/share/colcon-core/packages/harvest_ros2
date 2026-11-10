@@ -1,1 +1,1 @@
-geometry_msgs:harvest_description:rclcpp:sensor_msgs:std_msgs:trajectory_msgs
+geometry_msgs:harvest_description:rclcpp:ros_gz_interfaces:sensor_msgs:std_msgs:trajectory_msgs

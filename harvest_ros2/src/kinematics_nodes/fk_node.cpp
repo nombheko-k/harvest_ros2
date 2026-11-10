@@ -1,4 +1,6 @@
+#include <array>
 #include <cmath>
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -7,9 +9,16 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "trajectory_msgs/msg/joint_trajectory.hpp"
 
 namespace
 {
+constexpr double kRobotSpawnHeight = 0.025;
+constexpr double kGraspOffset = 0.045;
+constexpr std::array<const char *, 6> kJointNames = {
+  "rail_joint", "base_joint", "shoulder_joint", "elbow_joint",
+  "wrist_pitch_joint", "wrist_roll_joint"};
+
 // 4x4 Matrix Structure for Direct Homogeneous Transformations
 struct Matrix4
 {
@@ -135,91 +144,167 @@ public:
     joint_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", 10,
       std::bind(&FKNode::joint_callback, this, std::placeholders::_1));
-    // Publisher for the final evaluated end-effector coordinates
-      pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
+    target_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/harvest_target_pose", 10,
+      std::bind(&FKNode::target_callback, this, std::placeholders::_1));
+    trajectory_sub_ = create_subscription<trajectory_msgs::msg::JointTrajectory>(
+      "/arm_controller/joint_trajectory", 10,
+      std::bind(&FKNode::trajectory_callback, this, std::placeholders::_1));
+    // Keep the tool-origin output and publish the finger-midpoint grasp point separately.
+    pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
       "/calculated_end_effector_pose", 10);
-    RCLCPP_INFO(get_logger(), "FK node started using URDF-mapped transforms.");
+    grasp_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
+      "/calculated_grasp_point_pose", 10);
+    RCLCPP_INFO(get_logger(), "FK node started with tool and grasp-point outputs.");
   }
 
 private:
-// callback triggered when new joint state message arrives
-  void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
+  void target_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
   {
-    //define and initialise the target joint configuration
-    const std::unordered_map<std::string, double> required_joints = {
-      {"rail_joint", 0.0}, {"base_joint", 0.0}, {"shoulder_joint", 0.0},
-      {"elbow_joint", 0.0}, {"wrist_pitch_joint", 0.0}, {"wrist_roll_joint", 0.0}};
-    auto joints = required_joints;
+    if (msg->header.frame_id != "world") {
+      RCLCPP_ERROR(get_logger(), "FK target comparison requires the 'world' frame.");
+      return;
+    }
+    latest_target_ = *msg;
+    have_target_ = true;
+    // A previous crop's endpoint must not be compared with the newly selected berry.
+    have_commanded_endpoint_ = false;
+    log_commanded_endpoint_error();
+  }
 
-    // safely extract relevant joint states from incoming data arrays based on matching names
-    for (size_t i = 0; i < msg->name.size(); ++i) {
-      if (i >= msg->position.size()) continue; // Bounds to guard agianst mismatched arrays
-      auto joint = joints.find(msg->name[i]);
-      if (joint != joints.end()) {
-        joint->second = msg->position[i];
-      }
+  void trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg)
+  {
+    if (msg->points.empty()) {
+      RCLCPP_WARN(get_logger(), "Ignoring an empty trajectory for FK endpoint validation.");
+      return;
     }
 
-    // Assign mapped joint angles to corresponding local state tracking variables
-    const double q_rail = joints.at("rail_joint");
-    const double q_base = joints.at("base_joint");
-    const double q_shoulder = joints.at("shoulder_joint");
-    const double q_elbow = joints.at("elbow_joint");
-    const double q_pitch = joints.at("wrist_pitch_joint");
-    const double q_roll = joints.at("wrist_roll_joint");
+    const auto & endpoint = msg->points.back();
+    for (size_t joint_index = 0; joint_index < kJointNames.size(); ++joint_index) {
+      const auto joint = std::find(
+        msg->joint_names.begin(), msg->joint_names.end(), kJointNames[joint_index]);
+      if (joint == msg->joint_names.end()) {
+        RCLCPP_ERROR(
+          get_logger(), "Cannot validate FK endpoint: trajectory is missing joint '%s'.",
+          kJointNames[joint_index]);
+        return;
+      }
+      const size_t trajectory_index =
+        static_cast<size_t>(std::distance(msg->joint_names.begin(), joint));
+      if (trajectory_index >= endpoint.positions.size()) {
+        RCLCPP_ERROR(
+          get_logger(), "Cannot validate FK endpoint: no position for joint '%s'.",
+          kJointNames[joint_index]);
+        return;
+      }
+      commanded_endpoint_joints_[joint_index] = endpoint.positions[trajectory_index];
+    }
+    have_commanded_endpoint_ = true;
+    log_commanded_endpoint_error();
+  }
 
-    // Kinematic Chain mapped directly from the URDF
-    
-    // 0. World to Base Link via Rail (Prismatic X)
-    Matrix4 T_rail = Matrix4::translation(q_rail, 0.0, 0.025);
+  void joint_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
+  {
+    // Do not publish a plausible-looking pose when feedback is missing a joint.
+    std::unordered_map<std::string, double> joints;
+    for (size_t i = 0; i < msg->name.size(); ++i) {
+      if (i < msg->position.size()) {
+        joints[msg->name[i]] = msg->position[i];
+      }
+    }
+    std::array<double, kJointNames.size()> joint_positions{};
+    for (size_t index = 0; index < kJointNames.size(); ++index) {
+      const auto joint = joints.find(kJointNames[index]);
+      if (joint == joints.end()) {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 5000,
+          "Waiting for feedback for all six arm joints before computing FK.");
+        return;
+      }
+      joint_positions[index] = joint->second;
+    }
 
-    // 1. Base Joint (Revolute Z)
-    Matrix4 T_base = Matrix4::translation(0.0, 0.0, 0.108) * Matrix4::rotationZ(q_base);
-
-    // 2. Shoulder Joint (Revolute Y, initial pitch offset points arm +Z)
-    Matrix4 T_shoulder = Matrix4::translation(0.0, 0.0, 0.061) * 
-                         Matrix4::rpy(0.0, -M_PI_2, 0.0) * 
-                         Matrix4::rotationY(q_shoulder);
-
-    // 3. Elbow Joint (Revolute Y)
-    Matrix4 T_elbow = Matrix4::translation(0.15, 0.0, 0.0) * Matrix4::rotationY(q_elbow);
-
-    // 4. Wrist Pitch Joint (Revolute Y)
-    Matrix4 T_pitch = Matrix4::translation(0.15, 0.0, 0.0) * Matrix4::rotationY(q_pitch);
-
-    // 5. Wrist Roll Actuator Mount (Fixed Y-offset)
-    Matrix4 T_roll_actuator = Matrix4::translation(0.14, -0.072, 0.0);
-
-    // 6. Wrist Roll Joint & Tool Mount (Revolute X)
-    Matrix4 T_roll_joint = Matrix4::translation(0.02, 0.0, 0.0) * Matrix4::rotationX(q_roll);
-
-    // Compute total transform
-    Matrix4 T_total = T_rail * T_base * T_shoulder * T_elbow * T_pitch * T_roll_actuator * T_roll_joint;
-
+    const Matrix4 T_total = forward_transform(joint_positions);
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = now();
     pose.header.frame_id = "world";
-    // Extract translation vector coordinates directly from matrix right column
     pose.pose.position.x = T_total.m[0][3];
     pose.pose.position.y = T_total.m[1][3];
     pose.pose.position.z = T_total.m[2][3];
-    // convert 3x3 rotational matrix to quaternion
     pose.pose.orientation = matrix_to_quaternion(T_total);
 
-    // Publish to ROS2 
+    geometry_msgs::msg::PoseStamped grasp_pose = pose;
+    // Finger midpoint lies 45 mm along the tool's local +X axis from the tool mount.
+    grasp_pose.pose.position.x += kGraspOffset * T_total.m[0][0];
+    grasp_pose.pose.position.y += kGraspOffset * T_total.m[1][0];
+    grasp_pose.pose.position.z += kGraspOffset * T_total.m[2][0];
+
+    // Publish both tool origin and the actual point IK aims at for grasping.
     pose_pub_->publish(pose);
-    // Status logging for ongoing validation and debugging
-    RCLCPP_INFO(get_logger(), "FK -> X: %.4f, Y: %.4f, Z: %.4f",
-                pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
+    grasp_pub_->publish(grasp_pose);
+    if (have_target_) {
+      const double dx = grasp_pose.pose.position.x - latest_target_.pose.position.x;
+      const double dy = grasp_pose.pose.position.y - latest_target_.pose.position.y;
+      const double dz = grasp_pose.pose.position.z - latest_target_.pose.position.z;
+      RCLCPP_INFO_THROTTLE(
+        get_logger(), *get_clock(), 1000,
+        "Measured FK tracking error (nonzero while moving is expected): %.4f m "
+        "(x %.4f, y %.4f, z %.4f)",
+        std::sqrt(dx * dx + dy * dy + dz * dz), dx, dy, dz);
+    }
+  }
 
+  Matrix4 forward_transform(const std::array<double, kJointNames.size()> & joints) const
+  {
+    // This chain mirrors the URDF origins, joint axes, and fixed tool offsets.
+    const Matrix4 T_rail =
+      Matrix4::translation(joints[0], 0.0, kRobotSpawnHeight + 0.025);
+    const Matrix4 T_base =
+      Matrix4::translation(0.0, 0.0, 0.108) * Matrix4::rotationZ(joints[1]);
+    const Matrix4 T_shoulder =
+      Matrix4::translation(0.0, 0.0, 0.061) *
+      Matrix4::rpy(0.0, -M_PI_2, 0.0) * Matrix4::rotationY(joints[2]);
+    const Matrix4 T_elbow =
+      Matrix4::translation(0.15, 0.0, 0.0) * Matrix4::rotationY(joints[3]);
+    const Matrix4 T_pitch =
+      Matrix4::translation(0.15, 0.0, 0.0) * Matrix4::rotationY(joints[4]);
+    const Matrix4 T_roll_actuator = Matrix4::translation(0.14, -0.072, 0.0);
+    const Matrix4 T_roll_joint =
+      Matrix4::translation(0.02, 0.0, 0.0) * Matrix4::rotationX(joints[5]);
+    return T_rail * T_base * T_shoulder * T_elbow * T_pitch *
+           T_roll_actuator * T_roll_joint;
+  }
+
+  void log_commanded_endpoint_error()
+  {
+    if (!have_target_ || !have_commanded_endpoint_) {
+      return;
+    }
+
+    const Matrix4 transform = forward_transform(commanded_endpoint_joints_);
+    const double grasp_x = transform.m[0][3] + kGraspOffset * transform.m[0][0];
+    const double grasp_y = transform.m[1][3] + kGraspOffset * transform.m[1][0];
+    const double grasp_z = transform.m[2][3] + kGraspOffset * transform.m[2][0];
+    const double dx = grasp_x - latest_target_.pose.position.x;
+    const double dy = grasp_y - latest_target_.pose.position.y;
+    const double dz = grasp_z - latest_target_.pose.position.z;
+
+    // This endpoint check isolates the IK/FK geometry from the arm's in-flight tracking error.
     RCLCPP_INFO(
-      get_logger(), "rail %.3f base %.3f shoulder %.3f elbow %.3f wrist pitch %.3f wrist roll %.3f" ,
-      q_rail, q_base, q_shoulder, q_elbow, q_pitch, q_roll);
-
+      get_logger(),
+      "Commanded endpoint FK grasp error: %.4f m (x %.4f, y %.4f, z %.4f)",
+      std::sqrt(dx * dx + dy * dy + dz * dz), dx, dy, dz);
   }
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr target_sub_;
+  rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_sub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr grasp_pub_;
+  geometry_msgs::msg::PoseStamped latest_target_;
+  std::array<double, kJointNames.size()> commanded_endpoint_joints_{};
+  bool have_target_ = false;
+  bool have_commanded_endpoint_ = false;
 };
 
 // Node initialisation entry point

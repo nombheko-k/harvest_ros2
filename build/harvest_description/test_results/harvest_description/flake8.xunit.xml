@@ -1,14 +1,163 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuite
   name="harvest_description.flake8"
-  tests="1"
+  tests="25"
   errors="0"
-  failures="0"
-  time="0.276"
+  failures="25"
+  time="0.562"
 >
   <testcase
-    name="flake8"
-    classname="harvest_description.flake8"/>
+    name="I201 (./launch/display.launch.py:2:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="Missing newline between import groups. 'from ament_index_python.packages import get_package_share_directory' is identified as Third Party and 'import os' is identified as Stdlib.:&#10;from ament_index_python.packages import get_package_share_directory&#10;"/>
+  </testcase>
+  <testcase
+    name="W291 (./launch/display.launch.py:24:36)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="trailing whitespace:&#10;        Command(['xacro ', model]), &#10;"/>
+  </testcase>
+  <testcase
+    name="I201 (./launch/gazebo.launch.py:3:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="Missing newline between import groups. 'from ament_index_python.packages import get_package_prefix, get_package_share_directory' is identified as Third Party and 'from pathlib import Path' is identified as Stdlib.:&#10;from ament_index_python.packages import get_package_prefix, get_package_share_directory&#10;"/>
+  </testcase>
+  <testcase
+    name="I101 (./launch/gazebo.launch.py:6:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="Imported names are in the wrong order. Should be DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable:&#10;from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument&#10;"/>
+  </testcase>
+  <testcase
+    name="I100 (./launch/gazebo.launch.py:6:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="Import statements are in the wrong order. 'from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument' should be before 'from launch.substitutions import LaunchConfiguration':&#10;from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument&#10;"/>
+  </testcase>
+  <testcase
+    name="E501 (./launch/gazebo.launch.py:6:100)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="line too long (120 &gt; 99 characters):&#10;from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument&#10;"/>
+  </testcase>
+  <testcase
+    name="E302 (./launch/gazebo.launch.py:14:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="expected 2 blank lines, found 1:&#10;def default_metrics_file():&#10;"/>
+  </testcase>
+  <testcase
+    name="E302 (./launch/gazebo.launch.py:26:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="expected 2 blank lines, found 1:&#10;def generate_launch_description():&#10;"/>
+  </testcase>
+  <testcase
+    name="E501 (./launch/gazebo.launch.py:55:100)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="line too long (101 &gt; 99 characters):&#10;        description='CSV metrics path; defaults to the harvest_ros2 package directory when available'&#10;"/>
+  </testcase>
+  <testcase
+    name="W293 (./launch/gazebo.launch.py:70:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="blank line contains whitespace:&#10;    &#10;"/>
+  </testcase>
+  <testcase
+    name="W291 (./launch/gazebo.launch.py:73:41)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="trailing whitespace:&#10;        Command(['xacro ', xacro_file]), &#10;"/>
+  </testcase>
+  <testcase
+    name="E122 (./launch/gazebo.launch.py:151:5)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="continuation line missing indentation or outdented:&#10;    package='harvest_ros2',&#10;"/>
+  </testcase>
+  <testcase
+    name="E122 (./launch/gazebo.launch.py:152:5)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="continuation line missing indentation or outdented:&#10;    executable='gravity_compensation_node',&#10;"/>
+  </testcase>
+  <testcase
+    name="E122 (./launch/gazebo.launch.py:153:5)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="continuation line missing indentation or outdented:&#10;    output='screen',&#10;"/>
+  </testcase>
+  <testcase
+    name="E122 (./launch/gazebo.launch.py:154:5)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="continuation line missing indentation or outdented:&#10;    parameters=[{&#10;"/>
+  </testcase>
+  <testcase
+    name="E501 (./launch/gazebo.launch.py:155:100)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="line too long (104 &gt; 99 characters):&#10;        # Approximate each pitch joint's gravity coefficient from downstream URDF masses and lever arms.&#10;"/>
+  </testcase>
+  <testcase
+    name="I100 (./scripts/move_robot.py:5:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="Import statements are in the wrong order. 'from builtin_interfaces.msg import Duration' should be before 'from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint':&#10;from builtin_interfaces.msg import Duration&#10;"/>
+  </testcase>
+  <testcase
+    name="E302 (./scripts/move_robot.py:7:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="expected 2 blank lines, found 1:&#10;class HarvesterController(Node):&#10;"/>
+  </testcase>
+  <testcase
+    name="W291 (./scripts/move_robot.py:14:29)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="trailing whitespace:&#10;            JointTrajectory, &#10;"/>
+  </testcase>
+  <testcase
+    name="W291 (./scripts/move_robot.py:15:48)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="trailing whitespace:&#10;            '/arm_controller/joint_trajectory', &#10;"/>
+  </testcase>
+  <testcase
+    name="F541 (./scripts/move_robot.py:31:36)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="f-string is missing placeholders:&#10;            self.get_logger().info(f'Gazebo detected! Sending trajectory goal...')&#10;"/>
+  </testcase>
+  <testcase
+    name="W291 (./scripts/move_robot.py:39:62)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="trailing whitespace:&#10;                'rail_joint', 'base_joint', 'shoulder_joint', &#10;"/>
+  </testcase>
+  <testcase
+    name="E261 (./scripts/move_robot.py:46:63)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="at least two spaces before inline comment:&#10;            point.time_from_start = Duration(sec=4, nanosec=0) # Take 4 seconds&#10;"/>
+  </testcase>
+  <testcase
+    name="E302 (./scripts/move_robot.py:59:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="expected 2 blank lines, found 1:&#10;def main(args=None):&#10;"/>
+  </testcase>
+  <testcase
+    name="E305 (./scripts/move_robot.py:67:1)"
+    classname="harvest_description.flake8"
+  >
+      <failure message="expected 2 blank lines after class or function definition, found 1:&#10;if __name__ == '__main__':&#10;"/>
+  </testcase>
   <system-out>Checked files:
-* ./launch/display.launch.py</system-out>
+* ./launch/display.launch.py
+* ./launch/gazebo.launch.py
+* ./scripts/move_robot.py</system-out>
 </testsuite>

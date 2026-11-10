@@ -315,8 +315,8 @@ message(STATUS "Execute custom install script")
 
 # begin of custom install code
 
-# install(DIRECTORY "launch" "meshes" "urdf" "rviz" "DESTINATION" "share/harvest_description")
-ament_cmake_symlink_install_directory("/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description" DIRECTORY "launch" "meshes" "urdf" "rviz" "DESTINATION" "share/harvest_description")
+# install(DIRECTORY "launch" "urdf" "rviz" "meshes" "worlds" "DESTINATION" "share/harvest_description")
+ament_cmake_symlink_install_directory("/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description" DIRECTORY "launch" "urdf" "rviz" "meshes" "worlds" "DESTINATION" "share/harvest_description")
 
 # install(FILES "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/harvest_description" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
 ament_cmake_symlink_install_files("/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description" FILES "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/harvest_description" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")

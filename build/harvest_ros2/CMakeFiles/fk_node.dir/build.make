@@ -69,28 +69,28 @@ include CMakeFiles/fk_node.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/fk_node.dir/flags.make
 
-CMakeFiles/fk_node.dir/src/fk_node.cpp.o: CMakeFiles/fk_node.dir/flags.make
-CMakeFiles/fk_node.dir/src/fk_node.cpp.o: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/fk_node.cpp
-CMakeFiles/fk_node.dir/src/fk_node.cpp.o: CMakeFiles/fk_node.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_ros2/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/fk_node.dir/src/fk_node.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/fk_node.dir/src/fk_node.cpp.o -MF CMakeFiles/fk_node.dir/src/fk_node.cpp.o.d -o CMakeFiles/fk_node.dir/src/fk_node.cpp.o -c /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/fk_node.cpp
+CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o: CMakeFiles/fk_node.dir/flags.make
+CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/fk_node.cpp
+CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o: CMakeFiles/fk_node.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_ros2/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o -MF CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o.d -o CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o -c /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/fk_node.cpp
 
-CMakeFiles/fk_node.dir/src/fk_node.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/fk_node.dir/src/fk_node.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/fk_node.cpp > CMakeFiles/fk_node.dir/src/fk_node.cpp.i
+CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/fk_node.cpp > CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.i
 
-CMakeFiles/fk_node.dir/src/fk_node.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/fk_node.dir/src/fk_node.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/fk_node.cpp -o CMakeFiles/fk_node.dir/src/fk_node.cpp.s
+CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/fk_node.cpp -o CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.s
 
 # Object files for target fk_node
 fk_node_OBJECTS = \
-"CMakeFiles/fk_node.dir/src/fk_node.cpp.o"
+"CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o"
 
 # External object files for target fk_node
 fk_node_EXTERNAL_OBJECTS =
 
-fk_node: CMakeFiles/fk_node.dir/src/fk_node.cpp.o
+fk_node: CMakeFiles/fk_node.dir/src/kinematics_nodes/fk_node.cpp.o
 fk_node: CMakeFiles/fk_node.dir/build.make
 fk_node: /opt/ros/jazzy/lib/librclcpp.so
 fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_fastrtps_c.so
@@ -98,11 +98,12 @@ fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_fastrtps_cpp.so
 fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_introspection_c.so
 fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_introspection_cpp.so
 fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_generator_py.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_fastrtps_c.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_introspection_c.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_fastrtps_cpp.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_introspection_cpp.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_generator_py.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_c.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_cpp.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_introspection_c.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_introspection_cpp.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_cpp.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_generator_py.so
 fk_node: /opt/ros/jazzy/lib/liblibstatistics_collector.so
 fk_node: /opt/ros/jazzy/lib/librcl.so
 fk_node: /opt/ros/jazzy/lib/librmw_implementation.so
@@ -142,16 +143,30 @@ fk_node: /opt/ros/jazzy/lib/libstatistics_msgs__rosidl_generator_c.so
 fk_node: /opt/ros/jazzy/lib/libtracetools.so
 fk_node: /opt/ros/jazzy/lib/librcl_logging_interface.so
 fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_c.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_c.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_fastrtps_c.so
 fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_fastrtps_c.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_fastrtps_cpp.so
 fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_fastrtps_cpp.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_c.so
 fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_introspection_c.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_cpp.so
 fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_introspection_cpp.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_c.so
+fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_c.so
+fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_cpp.so
+fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_generator_c.so
+fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_cpp.so
+fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_generator_c.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_fastrtps_c.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_introspection_c.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_fastrtps_cpp.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_introspection_cpp.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_cpp.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_generator_py.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_c.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_c.so
+fk_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_generator_c.so
+fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_generator_c.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_fastrtps_c.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_fastrtps_cpp.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_c.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_cpp.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_cpp.so
 fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_fastrtps_c.so
 fk_node: /opt/ros/jazzy/lib/librosidl_typesupport_fastrtps_c.so
 fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_introspection_c.so
@@ -163,19 +178,12 @@ fk_node: /opt/ros/jazzy/lib/libfastcdr.so.2.2.8
 fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_introspection_cpp.so
 fk_node: /opt/ros/jazzy/lib/librosidl_typesupport_introspection_cpp.so
 fk_node: /opt/ros/jazzy/lib/librosidl_typesupport_introspection_c.so
-fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_generator_py.so
-fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_c.so
-fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_c.so
-fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_cpp.so
-fk_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_generator_c.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_cpp.so
-fk_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_generator_c.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_cpp.so
-fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_generator_c.so
-fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_cpp.so
 fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_cpp.so
 fk_node: /opt/ros/jazzy/lib/librosidl_typesupport_cpp.so
-fk_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_generator_c.so
+fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_generator_py.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_c.so
+fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_c.so
+fk_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_generator_c.so
 fk_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_generator_c.so
 fk_node: /opt/ros/jazzy/lib/librosidl_typesupport_c.so
 fk_node: /opt/ros/jazzy/lib/librcpputils.so

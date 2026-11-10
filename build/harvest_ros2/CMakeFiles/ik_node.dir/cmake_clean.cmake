@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/ik_node.dir/src/ik_node.cpp.o"
-  "CMakeFiles/ik_node.dir/src/ik_node.cpp.o.d"
+  "CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o"
+  "CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o.d"
   "ik_node"
   "ik_node.pdb"
 )

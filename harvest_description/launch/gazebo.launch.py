@@ -1,5 +1,6 @@
 import os
-from ament_index_python.packages import get_package_share_directory
+from pathlib import Path
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument
@@ -9,6 +10,18 @@ from launch.substitutions import Command
 from launch_ros.actions import Node
 # ADD THIS IMPORT EXPLICITLY FOR JAZZY STRING PARSING
 from launch_ros.parameter_descriptions import ParameterValue
+
+def default_metrics_file():
+    package_prefix = Path(get_package_prefix('harvest_ros2')).resolve()
+    for root in (package_prefix, *package_prefix.parents):
+        for package_directory in (
+            root / 'harvest_ros2',
+            root / 'src' / 'harvest_ros2' / 'harvest_ros2',
+        ):
+            if (package_directory / 'package.xml').is_file():
+                return str(package_directory / 'harvest_evaluation_metrics.csv')
+
+    return str(Path.home() / '.ros' / 'harvest_ros2' / 'harvest_evaluation_metrics.csv')
 
 def generate_launch_description():
     pkg_share = get_package_share_directory('harvest_description')
@@ -38,8 +51,8 @@ def generate_launch_description():
     )
     declare_metrics_file_cmd = DeclareLaunchArgument(
         'metrics_file',
-        default_value='harvest_evaluation_metrics.csv',
-        description='CSV evaluation metrics path; relative paths use the launch working directory'
+        default_value=default_metrics_file(),
+        description='CSV metrics path; defaults to the harvest_ros2 package directory when available'
     )
     declare_metrics_sample_period_cmd = DeclareLaunchArgument(
         'metrics_sample_period_sec',
@@ -118,6 +131,14 @@ def generate_launch_description():
         output='screen',
     )
 
+    # Load the separate position controller for the three gentle gripper hinges.
+    gripper_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['gripper_controller'],
+        output='screen',
+    )
+
     # Pass sim time to your Trajectory Planner
     trajectory_planner_node = Node(
         package='harvest_ros2',
@@ -132,10 +153,10 @@ def generate_launch_description():
     output='screen',
     parameters=[{
         # Approximate each pitch joint's gravity coefficient from downstream URDF masses and lever arms.
-        'shoulder.max_gravity': 6.95,
-        'elbow.max_gravity': 3.80,
+        'shoulder.max_gravity': 4.0,
+        'elbow.max_gravity': 4.0,
         'wrist_p.max_gravity': 1.63,
-        'shoulder.limit': 30.0,
+        'shoulder.limit': 8.5,
         'use_sim_time': use_sim_time
     }]
     )
@@ -144,6 +165,14 @@ def generate_launch_description():
     ik_node = Node(
         package='harvest_ros2',
         executable='ik_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # Publish world-frame tool/grasp FK and compare its grasp point with the active berry target.
+    fk_node = Node(
+        package='harvest_ros2',
+        executable='fk_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}]
     )
@@ -177,6 +206,13 @@ def generate_launch_description():
         )
     )
 
+    delay_gripper_controller_after_effort = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=effort_controller_spawner,
+            on_exit=[gripper_controller_spawner],
+        )
+    )
+
     return LaunchDescription([
         set_gazebo_resource_path,
         declare_use_sim_time_cmd,  # This registers 'use_sim_time' so it exists
@@ -190,7 +226,9 @@ def generate_launch_description():
         trajectory_planner_node,  # Added explicit launch execution
         gravity_compensation_node,
         ik_node,                  # Added explicit launch execution
+        fk_node,
         crop_simulator_node,
         delay_broadcaster_after_spawn,
-        delay_effort_controller_after_broadcaster
+        delay_effort_controller_after_broadcaster,
+        delay_gripper_controller_after_effort
     ])

@@ -1,0 +1,208 @@
+UpdateCTestConfiguration  from :/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini
+Parse Config file:/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini
+   Site: NomB
+   Build name: (empty)
+ Add coverage exclude regular expressions.
+Create new tag: 20261110-1034 - Experimental
+UpdateCTestConfiguration  from :/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini
+Parse Config file:/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/CTestConfiguration.ini
+Test project /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: flake8
+
+1: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_flake8/flake8.txt" "--command" "/opt/ros/jazzy/bin/ament_flake8" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml"
+1: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description
+1: Test timeout computed to be: 60
+1: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':
+1:  - /opt/ros/jazzy/bin/ament_flake8 --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml
+1: from ament_index_python.packages import get_package_share_directory
+1: ^
+1:         Command(['xacro ', model]), 
+1:                                    ^
+1: from ament_index_python.packages import get_package_prefix, get_package_share_directory
+1: ^
+1: from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument
+1: ^
+1: from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument
+1: ^
+1: from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument
+1:                                                                                                    ^
+1: def default_metrics_file():
+1: ^
+1: def generate_launch_description():
+1: ^
+1:         description='CSV metrics path; defaults to the harvest_ros2 package directory when available'
+1:                                                                                                    ^
+1:     
+1: ^
+1:         Command(['xacro ', xacro_file]), 
+1:                                         ^
+1:     package='harvest_ros2',
+1:     ^
+1:     executable='gravity_compensation_node',
+1:     ^
+1:     output='screen',
+1:     ^
+1:     parameters=[{
+1:     ^
+1:         # Approximate each pitch joint's gravity coefficient from downstream URDF masses and lever arms.
+1:                                                                                                    ^
+1: from builtin_interfaces.msg import Duration
+1: ^
+1: class HarvesterController(Node):
+1: ^
+1:             JointTrajectory, 
+1:                             ^
+1:             '/arm_controller/joint_trajectory', 
+1:                                                ^
+1:             self.get_logger().info(f'Gazebo detected! Sending trajectory goal...')
+1:                                    ^
+1:                 'rail_joint', 'base_joint', 'shoulder_joint', 
+1:                                                              ^
+1:             point.time_from_start = Duration(sec=4, nanosec=0) # Take 4 seconds
+1:                                                               ^
+1: def main(args=None):
+1: ^
+1: if __name__ == '__main__':
+1: ^
+1: 4     E122 continuation line missing indentation or outdented
+1: 1     E261 at least two spaces before inline comment
+1: 4     E302 expected 2 blank lines, found 1
+1: 1     E305 expected 2 blank lines after class or function definition, found 1
+1: 3     E501 line too long (120 > 99 characters)
+1: 1     F541 f-string is missing placeholders
+1: 2     I100 Import statements are in the wrong order. 'from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument' should be before 'from launch.substitutions import LaunchConfiguration'
+1: 1     I101 Imported names are in the wrong order. Should be DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable
+1: 2     I201 Missing newline between import groups. 'from ament_index_python.packages import get_package_share_directory' is identified as Third Party and 'import os' is identified as Stdlib.
+1: 5     W291 trailing whitespace
+1: 1     W293 blank line contains whitespace
+1: 
+1: ./launch/display.launch.py:2:1: I201 Missing newline between import groups. 'from ament_index_python.packages import get_package_share_directory' is identified as Third Party and 'import os' is identified as Stdlib.
+1: 
+1: ./launch/display.launch.py:24:36: W291 trailing whitespace
+1: 
+1: ./launch/gazebo.launch.py:3:1: I201 Missing newline between import groups. 'from ament_index_python.packages import get_package_prefix, get_package_share_directory' is identified as Third Party and 'from pathlib import Path' is identified as Stdlib.
+1: 
+1: ./launch/gazebo.launch.py:6:1: I101 Imported names are in the wrong order. Should be DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable
+1: 
+1: ./launch/gazebo.launch.py:6:1: I100 Import statements are in the wrong order. 'from launch.actions import IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, DeclareLaunchArgument' should be before 'from launch.substitutions import LaunchConfiguration'
+1: 
+1: ./launch/gazebo.launch.py:6:100: E501 line too long (120 > 99 characters)
+1: 
+1: ./launch/gazebo.launch.py:14:1: E302 expected 2 blank lines, found 1
+1: 
+1: ./launch/gazebo.launch.py:26:1: E302 expected 2 blank lines, found 1
+1: 
+1: ./launch/gazebo.launch.py:55:100: E501 line too long (101 > 99 characters)
+1: 
+1: ./launch/gazebo.launch.py:70:1: W293 blank line contains whitespace
+1: 
+1: ./launch/gazebo.launch.py:73:41: W291 trailing whitespace
+1: 
+1: ./launch/gazebo.launch.py:151:5: E122 continuation line missing indentation or outdented
+1: 
+1: ./launch/gazebo.launch.py:152:5: E122 continuation line missing indentation or outdented
+1: 
+1: ./launch/gazebo.launch.py:153:5: E122 continuation line missing indentation or outdented
+1: 
+1: ./launch/gazebo.launch.py:154:5: E122 continuation line missing indentation or outdented
+1: 
+1: ./launch/gazebo.launch.py:155:100: E501 line too long (104 > 99 characters)
+1: 
+1: ./scripts/move_robot.py:5:1: I100 Import statements are in the wrong order. 'from builtin_interfaces.msg import Duration' should be before 'from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint'
+1: 
+1: ./scripts/move_robot.py:7:1: E302 expected 2 blank lines, found 1
+1: 
+1: ./scripts/move_robot.py:14:29: W291 trailing whitespace
+1: 
+1: ./scripts/move_robot.py:15:48: W291 trailing whitespace
+1: 
+1: ./scripts/move_robot.py:31:36: F541 f-string is missing placeholders
+1: 
+1: ./scripts/move_robot.py:39:62: W291 trailing whitespace
+1: 
+1: ./scripts/move_robot.py:46:63: E261 at least two spaces before inline comment
+1: 
+1: ./scripts/move_robot.py:59:1: E302 expected 2 blank lines, found 1
+1: 
+1: ./scripts/move_robot.py:67:1: E305 expected 2 blank lines after class or function definition, found 1
+1: 
+1: 
+1: 3 files checked
+1: 25 errors
+1: 
+1: 'E'-type errors: 13
+1: 'F'-type errors: 1
+1: 'I'-type errors: 5
+1: 'W'-type errors: 6
+1: 
+1: Checked files:
+1: 
+1: * ./launch/display.launch.py
+1: * ./launch/gazebo.launch.py
+1: * ./scripts/move_robot.py
+1: -- run_test.py: return code 1
+1: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/flake8.xunit.xml'
+1/4 Test #1: flake8 ...........................***Failed    1.13 sec
+test 2
+    Start 2: lint_cmake
+
+2: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_lint_cmake/lint_cmake.txt" "--command" "/opt/ros/jazzy/bin/ament_lint_cmake" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml"
+2: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description
+2: Test timeout computed to be: 60
+2: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':
+2:  - /opt/ros/jazzy/bin/ament_lint_cmake --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml
+2: 
+2: No problems found
+2: -- run_test.py: return code 0
+2: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/lint_cmake.xunit.xml'
+2/4 Test #2: lint_cmake .......................   Passed    0.44 sec
+test 3
+    Start 3: pep257
+
+3: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_pep257/pep257.txt" "--command" "/opt/ros/jazzy/bin/ament_pep257" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml"
+3: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description
+3: Test timeout computed to be: 60
+3: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':
+3:  - /opt/ros/jazzy/bin/ament_pep257 --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml
+3: checking ./launch/display.launch.py
+3: checking ./launch/gazebo.launch.py
+3: checking ./scripts/move_robot.py
+3: No problems found
+3: -- run_test.py: return code 0
+3: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/pep257.xunit.xml'
+3/4 Test #3: pep257 ...........................   Passed    0.60 sec
+test 4
+    Start 4: xmllint
+
+4: Test command: /usr/bin/python3 "-u" "/opt/ros/jazzy/share/ament_cmake_test/cmake/run_test.py" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml" "--package-name" "harvest_description" "--output-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/ament_xmllint/xmllint.txt" "--command" "/opt/ros/jazzy/bin/ament_xmllint" "--xunit-file" "/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml"
+4: Working Directory: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description
+4: Test timeout computed to be: 60
+4: -- run_test.py: invoking following command in '/home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description':
+4:  - /opt/ros/jazzy/bin/ament_xmllint --xunit-file /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml
+4: File 'package.xml' is valid
+4: 
+4: No problems found
+4: -- run_test.py: return code 0
+4: -- run_test.py: verify result file '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description/test_results/harvest_description/xmllint.xunit.xml'
+4/4 Test #4: xmllint ..........................   Passed    1.67 sec
+
+75% tests passed, 1 tests failed out of 4
+
+Label Time Summary:
+flake8        =   1.13 sec*proc (1 test)
+lint_cmake    =   0.44 sec*proc (1 test)
+linter        =   3.84 sec*proc (4 tests)
+pep257        =   0.60 sec*proc (1 test)
+xmllint       =   1.67 sec*proc (1 test)
+
+Total Test time (real) =   3.84 sec
+
+The following tests FAILED:
+	  1 - flake8 (Failed)

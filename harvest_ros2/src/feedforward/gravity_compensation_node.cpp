@@ -35,19 +35,19 @@ public:
         this->declare_parameter<double>("shoulder.ki", 0.0);
         this->declare_parameter<double>("shoulder.kd", 4.0);
         this->declare_parameter<double>("shoulder.i_clamp", 0.0);
-        this->declare_parameter<double>("shoulder.limit", 8.0);
-        this->declare_parameter<double>("shoulder.max_gravity", 6.95);
+        this->declare_parameter<double>("shoulder.limit", 8.5);
+        this->declare_parameter<double>("shoulder.max_gravity", 4.0);
 
         // Elbow
         this->declare_parameter<double>("elbow.kp", 25.0);
         this->declare_parameter<double>("elbow.ki", 0.0);
         this->declare_parameter<double>("elbow.kd", 2.0);
         this->declare_parameter<double>("elbow.i_clamp", 0.0);
-        this->declare_parameter<double>("elbow.limit", 4.0);
-        this->declare_parameter<double>("elbow.max_gravity", 3.80);
+        this->declare_parameter<double>("elbow.limit", 8.5);
+        this->declare_parameter<double>("elbow.max_gravity", 4.0);
         
         // Wrist pitch
-        this->declare_parameter<double>("wrist_p.kp", 10.0);
+        this->declare_parameter<double>("wrist_p.kp", 12.0);
         this->declare_parameter<double>("wrist_p.ki", 0.0);
         this->declare_parameter<double>("wrist_p.kd", 1.0);
         this->declare_parameter<double>("wrist_p.i_clamp", 0.0);
@@ -124,7 +124,8 @@ private:
         trajectory_start_time_ = this->now();
         trajectory_active_ = true;
         target_initialized_ = true;
-        settled_counter_ = 0;
+        trajectory_end_reached_ = false;
+        settled_duration_sec_ = 0.0;
         // Keep learned static-load correction across moves; only clear velocity-filter memory.
         std::fill(smoothed_vel_errors_.begin(), smoothed_vel_errors_.end(), 0.0);
     }
@@ -149,6 +150,7 @@ private:
                 rclcpp::Duration(points.back().time_from_start).seconds())
             {
                 lower_idx = upper_idx = points.size() - 1;
+                trajectory_end_reached_ = true;
 
                 // Ensure final trajectory point is held exactly
                 for (size_t j = 0; j < joint_names_.size(); ++j)
@@ -213,7 +215,13 @@ private:
         effort_msg.data.resize(joint_names_.size(), 0.0);
 
         for (size_t i = 0; i < joint_names_.size(); ++i) {
-            double pos_error = target_positions_[i] - current_positions_[i];
+            constexpr double position_control_deadband = 0.0005;
+            const double measured_position_error =
+                target_positions_[i] - current_positions_[i];
+            // Avoid chatter from sub-mm/sub-milliradian feedback noise while retaining velocity damping.
+            const double pos_error =
+                std::abs(measured_position_error) < position_control_deadband ?
+                0.0 : measured_position_error;
             double raw_vel_error = target_velocities_[i] - current_velocities_[i];
             
             smoothed_vel_errors_[i] = (0.8 * smoothed_vel_errors_[i]) + (0.2 * raw_vel_error);
@@ -244,7 +252,7 @@ private:
                 double max_grav_el = this->get_parameter("elbow.max_gravity").as_double();
                 const double shoulder_angle = current_positions_[2];
                 const double elbow_angle = current_positions_[3];
-                ff_gravity = max_grav_el * std::sin(shoulder_angle + elbow_angle);
+                ff_gravity = -max_grav_el * std::sin(shoulder_angle + elbow_angle);
             } else if (joint_names_[i] == "wrist_pitch_joint") {
                 kp = this->get_parameter("wrist_p.kp").as_double();  ki = this->get_parameter("wrist_p.ki").as_double();  kd = this->get_parameter("wrist_p.kd").as_double();
                 i_clamp = this->get_parameter("wrist_p.i_clamp").as_double(); limit = this->get_parameter("wrist_p.limit").as_double();
@@ -253,16 +261,15 @@ private:
                 const double shoulder_angle = current_positions_[2];
                 const double elbow_angle = current_positions_[3];
                 const double wrist_pitch = current_positions_[4];
-                ff_gravity = max_grav_wp * std::sin(shoulder_angle + elbow_angle + wrist_pitch);
+                ff_gravity = -max_grav_wp * std::sin(shoulder_angle + elbow_angle + wrist_pitch);
             } else if (joint_names_[i] == "wrist_roll_joint") {
                 kp = this->get_parameter("wrist_r.kp").as_double();  ki = this->get_parameter("wrist_r.ki").as_double();  kd = this->get_parameter("wrist_r.kd").as_double();
                 i_clamp = this->get_parameter("wrist_r.i_clamp").as_double(); limit = this->get_parameter("wrist_r.limit").as_double();
             }
 
             // Accumulate small steady-state arm errors so gravity-model bias does not leave the tool off target.
-            constexpr double deadband_tolerance = 0.0005;
             double candidate_integral = integral_errors_[i];
-            if (std::abs(pos_error) > deadband_tolerance) {
+            if (std::abs(pos_error) >= position_control_deadband) {
                 candidate_integral = std::clamp(
                     candidate_integral + pos_error * dt, -i_clamp, i_clamp);
             }
@@ -279,12 +286,13 @@ private:
             effort_msg.data[i] = std::clamp(raw_effort, -limit, limit);
         }
 
-        if (trajectory_active_)
+        if (trajectory_active_ && trajectory_end_reached_)
         {
             bool all_joints_settled = true;
 
             constexpr double settle_position_tol = 0.005;
             constexpr double settle_velocity_tol = 0.01;
+            constexpr double settle_duration_sec = 0.10;
 
             for (size_t i = 0; i < joint_names_.size(); ++i)
             {
@@ -304,18 +312,18 @@ private:
 
             if (all_joints_settled)
             {
-                settled_counter_++;
+                settled_duration_sec_ += dt;
             }
             else
             {
-                settled_counter_ = 0;
+                settled_duration_sec_ = 0.0;
             }
 
-            if (settled_counter_ >= 250)
+            if (settled_duration_sec_ >= settle_duration_sec)
             {
-                // Stop trajectory interpolation but keep the final reference active for position holding.
+                // Match IK's 100 ms hold requirement before allowing the next harvest action.
                 trajectory_active_ = false;
-                settled_counter_ = 0;
+                settled_duration_sec_ = 0.0;
 
                 RCLCPP_INFO(
                     this->get_logger(),
@@ -343,7 +351,8 @@ private:
     rclcpp::Time last_time_;
     bool trajectory_active_;
     bool target_initialized_;
-    int settled_counter_ = 0;
+    bool trajectory_end_reached_ = false;
+    double settled_duration_sec_ = 0.0;
 };
 
 int main(int argc, char * argv[])

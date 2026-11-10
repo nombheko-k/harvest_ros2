@@ -1,0 +1,75 @@
+[0.045s] Invoking command in '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description -DCMAKE_INSTALL_PREFIX=/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description
+[0.106s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.744s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.795s] -- Found rclcpp: 28.1.22 (/opt/ros/jazzy/share/rclcpp/cmake)
+[1.393s] -- Found rosidl_generator_c: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[1.446s] -- Found rosidl_generator_cpp: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[1.501s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.561s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.834s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[1.844s] -- Found rmw_fastrtps_cpp: 8.4.4 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[2.097s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[2.658s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[2.907s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[3.404s] -- Found sensor_msgs: 5.3.8 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[3.580s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[4.002s] -- Added test 'flake8' to check Python code syntax and style conventions
+[4.002s] -- Configured 'flake8' exclude dirs and/or files: 
+[4.004s] -- Added test 'lint_cmake' to check CMake code style
+[4.005s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[4.011s] -- Added test 'xmllint' to check XML markup files
+[4.029s] -- Configuring done (4.0s)
+[4.085s] -- Generating done (0.0s)
+[4.104s] -- Build files have been written to: /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description
+[4.134s] Invoked command in '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_description -DCMAKE_INSTALL_PREFIX=/home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description
+[4.138s] Invoking command in '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description -- -j16 -l16
+[4.241s] Invoked command in '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description -- -j16 -l16
+[4.263s] Invoking command in '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description
+[4.279s] -- Install configuration: ""
+[4.280s] -- Execute custom install script
+[4.281s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/launch/__pycache__/display.launch.cpython-312.pyc
+[4.282s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/launch/__pycache__/gazebo.launch.cpython-312.pyc
+[4.302s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/launch/display.launch.py
+[4.302s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/launch/gazebo.launch.py
+[4.322s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/urdf/config/robot_controllers.yaml
+[4.341s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/urdf/mech/harvest_arm.urdf.xacro
+[4.342s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/urdf/mech/rail.urdf.xacro
+[4.342s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/urdf/mech/soft_gripper.urdf.xacro
+[4.342s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/urdf/robot_utils.urdf.xacro
+[4.358s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/urdf/robots/harvest_full.urdf.xacro
+[4.376s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/rviz/view_robot.rviz
+[4.378s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/Part_4.gltf
+[4.394s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/as5600_mount.gltf
+[4.411s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/base_pcb_box.gltf
+[4.428s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/base_to_link.gltf
+[4.445s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/bearing17_26_5_0.gltf
+[4.471s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/bearing17_26_5_balance.gltf
+[4.499s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/bearing35_47_7.gltf
+[4.523s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/bearing35_47_7_1.gltf
+[4.543s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/cam_addapter.gltf
+[4.574s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/cam_v2.gltf
+[4.608s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/cycloidal_dis_balance.gltf
+[4.639s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/cycloidal_disk____0.gltf
+[4.665s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/exterior_output_drive.gltf
+[4.687s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/external_housing.gltf
+[4.707s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/gearbox_housing.gltf
+[4.728s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/inner_output_drive.gltf
+[4.749s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/joint_to_joint.gltf
+[4.771s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/meshes/nema17_smal.gltf
+[4.795s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/worlds/harvest.sdf
+[4.821s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/ament_index/resource_index/package_run_dependencies/harvest_description
+[4.823s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/ament_index/resource_index/parent_prefix_path/harvest_description
+[4.824s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/environment/ament_prefix_path.sh
+[4.825s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/environment/ament_prefix_path.dsv
+[4.827s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/environment/path.sh
+[4.827s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/environment/path.dsv
+[4.827s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/local_setup.bash
+[4.828s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/local_setup.sh
+[4.828s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/local_setup.zsh
+[4.828s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/local_setup.dsv
+[4.828s] -- Symlinking: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/package.dsv
+[4.846s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/ament_index/resource_index/packages/harvest_description
+[4.847s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/cmake/harvest_descriptionConfig.cmake
+[4.847s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/cmake/harvest_descriptionConfig-version.cmake
+[4.847s] -- Up-to-date symlink: /home/usernom-b/ros2_ws/src/harvest_ros2/install/harvest_description/share/harvest_description/package.xml
+[4.850s] Invoked command in '/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_description

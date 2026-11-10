@@ -15,7 +15,7 @@ find_package(ros_gz_interfaces REQUIRED)
 
 # Forward Kinematics Node
 add_executable(fk_node src/kinematics_nodes/fk_node.cpp)
-ament_target_dependencies(fk_node rclcpp sensor_msgs geometry_msgs)
+ament_target_dependencies(fk_node rclcpp sensor_msgs geometry_msgs trajectory_msgs)
 
 # Inverse Kinematics Node
 add_executable(ik_node src/kinematics_nodes/ik_node.cpp)

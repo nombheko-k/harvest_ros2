@@ -48,7 +48,7 @@ Launch Gazebo with the robot, controllers, inverse kinematics, trajectory planne
 ros2 launch harvest_description gazebo.launch.py
 ```
 
-The inverse kinematics node accepts target poses on `/harvest_target_pose`; target frames must be `world`. By default, `crop_simulator_node` spawns a random cluster of 5-7 red strawberries in a 10 cm x 10 cm zone. The bridged camera stream on `/camera/image_raw` is used to detect red berries; each detection is published as the crop name on `/crop_simulator/berry_detected`, then that berry is harvested. After all six joints settle following the wrist twist, the simulator deletes the crop and waits for a fresh camera detection before proceeding. Publish `std_msgs/msg/Empty` on `/crop_simulator/start_cluster` to start another cluster, or set `auto_start_cluster:=false` to disable startup spawning. The legacy `/crop_simulator/spawn_strawberry` topic remains available for single crops. Joint positions are reported on `/joint_states`.
+The inverse kinematics node accepts target poses on `/harvest_target_pose`; target frames must be `world`. By default, `crop_simulator_node` spawns a random cluster of 5-7 red strawberries in a 10 cm x 10 cm zone. Berries are visual-only: their spherical collision geometry would prevent the gripper from reaching the berry-center grasp target. The bridged camera stream on `/camera/image_raw` is used to detect red berries; each detection is published as the crop name on `/crop_simulator/berry_detected`, then that berry is harvested. After all six joints settle following the wrist twist, the simulator deletes the crop and waits for a fresh camera detection before proceeding. Publish `std_msgs/msg/Empty` on `/crop_simulator/start_cluster` to start another cluster, or set `auto_start_cluster:=false` to disable startup spawning. The legacy `/crop_simulator/spawn_strawberry` topic remains available for single crops. Joint positions are reported on `/joint_states`.
 
 To view the live camera feed, run `ros2 run rqt_image_view rqt_image_view` and select `/camera/image_raw`. Install `ros-jazzy-rqt-image-view` if the viewer is not already available.
 
@@ -56,7 +56,7 @@ To view the live camera feed, run `ros2 run rqt_image_view rqt_image_view` and s
 
 | Node | Subscribes to | Publishes to | Purpose |
 | --- | --- | --- | --- |
-| `fk_node` | `/joint_states` | `/calculated_end_effector_pose` | Computes the end-effector pose from the named joint positions. |
+| `fk_node` | `/joint_states`, `/harvest_target_pose`, `/arm_controller/joint_trajectory` | `/calculated_end_effector_pose`, `/calculated_grasp_point_pose` | Computes measured FK and reports commanded-endpoint IK/FK error separately from in-flight tracking error. |
 | `ik_node` | `/harvest_target_pose`, `/joint_states` | `/ik_node/raw_joint_targets`, `/harvest/cycle_complete` | Computes joint targets, commands a wrist-roll twist, then signals completion after six-joint settling. |
 | `trajectory_planner_node` | `/ik_node/raw_joint_targets`, `/joint_states` | `/arm_controller/joint_trajectory` | Converts joint targets into synchronized, jerk-limited trajectories. |
 | `gravity_compensation_node` | `/joint_states`, `/arm_controller/joint_trajectory` | `/effort_controller/commands` | Applies per-joint PID effort control and shoulder gravity compensation. |
@@ -70,7 +70,7 @@ Run the forward-kinematics node separately when needed:
 ros2 run harvest_ros2 fk_node
 ```
 
-The Gazebo launch starts the inverse-kinematics, trajectory-planner, and gravity-compensation nodes; it does not start `fk_node`.
+The Gazebo launch also starts `fk_node` to publish the measured tool and grasp-point poses and report endpoint FK checks.
 
 ## License
 

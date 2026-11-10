@@ -11,6 +11,8 @@ controller_manager:
     # Change type to an effort commander group if sending calculated math feeds directly
     effort_controller:
       type: effort_controllers/JointGroupEffortController
+    gripper_controller:
+      type: position_controllers/JointGroupPositionController
 
 effort_controller:
   ros__parameters:
@@ -29,3 +31,12 @@ effort_controller:
     open_loop_control: false # Set to false to force Gazebo to use the PID closed-loop tracking feedback
 
     # PID gains are applied by gravity_compensation_node, not this effort-command controller.
+
+# Keep the three low-torque gripper hinges on their own position command topic.
+gripper_controller:
+  ros__parameters:
+    joints:
+      - finger_joint_1
+      - finger_joint_2
+      - finger_joint_3
+    interface_name: position

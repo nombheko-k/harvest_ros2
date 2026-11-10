@@ -69,28 +69,28 @@ include CMakeFiles/ik_node.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/ik_node.dir/flags.make
 
-CMakeFiles/ik_node.dir/src/ik_node.cpp.o: CMakeFiles/ik_node.dir/flags.make
-CMakeFiles/ik_node.dir/src/ik_node.cpp.o: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/ik_node.cpp
-CMakeFiles/ik_node.dir/src/ik_node.cpp.o: CMakeFiles/ik_node.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_ros2/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/ik_node.dir/src/ik_node.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ik_node.dir/src/ik_node.cpp.o -MF CMakeFiles/ik_node.dir/src/ik_node.cpp.o.d -o CMakeFiles/ik_node.dir/src/ik_node.cpp.o -c /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/ik_node.cpp
+CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o: CMakeFiles/ik_node.dir/flags.make
+CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o: /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/ik_node.cpp
+CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o: CMakeFiles/ik_node.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/usernom-b/ros2_ws/src/harvest_ros2/build/harvest_ros2/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o -MF CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o.d -o CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o -c /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/ik_node.cpp
 
-CMakeFiles/ik_node.dir/src/ik_node.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ik_node.dir/src/ik_node.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/ik_node.cpp > CMakeFiles/ik_node.dir/src/ik_node.cpp.i
+CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/ik_node.cpp > CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.i
 
-CMakeFiles/ik_node.dir/src/ik_node.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ik_node.dir/src/ik_node.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/ik_node.cpp -o CMakeFiles/ik_node.dir/src/ik_node.cpp.s
+CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/usernom-b/ros2_ws/src/harvest_ros2/harvest_ros2/src/kinematics_nodes/ik_node.cpp -o CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.s
 
 # Object files for target ik_node
 ik_node_OBJECTS = \
-"CMakeFiles/ik_node.dir/src/ik_node.cpp.o"
+"CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o"
 
 # External object files for target ik_node
 ik_node_EXTERNAL_OBJECTS =
 
-ik_node: CMakeFiles/ik_node.dir/src/ik_node.cpp.o
+ik_node: CMakeFiles/ik_node.dir/src/kinematics_nodes/ik_node.cpp.o
 ik_node: CMakeFiles/ik_node.dir/build.make
 ik_node: /opt/ros/jazzy/lib/librclcpp.so
 ik_node: /opt/ros/jazzy/lib/libtrajectory_msgs__rosidl_typesupport_fastrtps_c.so
@@ -152,14 +152,15 @@ ik_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_generator_py.so
 ik_node: /opt/ros/jazzy/lib/libsensor_msgs__rosidl_typesupport_c.so
 ik_node: /opt/ros/jazzy/lib/libgeometry_msgs__rosidl_typesupport_c.so
 ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_fastrtps_c.so
-ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_c.so
 ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_fastrtps_cpp.so
+ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_c.so
 ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_introspection_cpp.so
+ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_generator_py.so
+ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_c.so
 ik_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_fastrtps_c.so
 ik_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_fastrtps_cpp.so
 ik_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_introspection_c.so
 ik_node: /opt/ros/jazzy/lib/libservice_msgs__rosidl_typesupport_introspection_cpp.so
-ik_node: /opt/ros/jazzy/lib/libstd_msgs__rosidl_typesupport_c.so
 ik_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_fastrtps_c.so
 ik_node: /opt/ros/jazzy/lib/librosidl_typesupport_fastrtps_c.so
 ik_node: /opt/ros/jazzy/lib/libbuiltin_interfaces__rosidl_typesupport_introspection_c.so

@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuite
   name="harvest_description.pep257"
-  tests="1"
+  tests="3"
   errors="0"
   failures="0"
-  time="0.025"
+  time="0.047"
 >
   <testcase
     name="./launch/display.launch.py"
     classname="harvest_description.pep257"/>
+  <testcase
+    name="./launch/gazebo.launch.py"
+    classname="harvest_description.pep257"/>
+  <testcase
+    name="./scripts/move_robot.py"
+    classname="harvest_description.pep257"/>
   <system-out>Checked files:
-* ./launch/display.launch.py</system-out>
+* ./launch/display.launch.py
+* ./launch/gazebo.launch.py
+* ./scripts/move_robot.py</system-out>
 </testsuite>
