@@ -83,6 +83,10 @@ public:
     joint_state_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", 10,
       std::bind(&CropSimulatorNode::handle_joint_state, this, std::placeholders::_1));
+    // Sample the measured FK tool-origin pose for positioning-precision metrics.
+    end_effector_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/calculated_end_effector_pose", 10,
+      std::bind(&CropSimulatorNode::handle_end_effector_pose, this, std::placeholders::_1));
     camera_image_sub_ = create_subscription<sensor_msgs::msg::Image>(
       "/camera/image_raw", rclcpp::SensorDataQoS(),
       std::bind(&CropSimulatorNode::handle_camera_image, this, std::placeholders::_1));
@@ -141,6 +145,7 @@ private:
       "wall_elapsed_s,sim_time_s,event,cluster_id,target_index,target_name,status,"
       "target_source,detection_status,detection_wait_s,clear_result,target_elapsed_s,"
       "target_x_m,target_y_m,target_z_m,crops_cleared,crops_total,"
+      "end_effector_x_m,end_effector_y_m,end_effector_z_m"
       "cluster_clearing_time_sim_s,cluster_clearing_time_wall_s,"
       "rail_velocity_m_s,base_velocity_rad_s,shoulder_velocity_rad_s,elbow_velocity_rad_s,"
       "wrist_pitch_velocity_rad_s,wrist_roll_velocity_rad_s,"
@@ -240,6 +245,15 @@ private:
       if (joint_acceleration_valid_[axis]) {
         metrics_file_ << joint_acceleration_[axis];
       }
+    }
+    // Keep unavailable FK measurements empty rather than reporting a false zero position.
+    metrics_file_ << ',';
+    if (have_end_effector_pose_) {
+      metrics_file_ << end_effector_pose_.pose.position.x << ','
+                    << end_effector_pose_.pose.position.y << ','
+                    << end_effector_pose_.pose.position.z;
+    } else {
+      metrics_file_ << ",,";
     }
     metrics_file_ << '\n';
     metrics_file_.flush();
@@ -686,6 +700,12 @@ private:
       current_target_index_ + 1, cluster_targets_.size());
   }
 
+  void handle_end_effector_pose(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  {
+    end_effector_pose_ = *msg;
+    have_end_effector_pose_ = true;
+  }
+
   void handle_camera_image(const sensor_msgs::msg::Image::SharedPtr msg)
   {
     if (!cluster_active_ || !awaiting_camera_detection_ ||
@@ -984,6 +1004,8 @@ private:
   std::array<double, 6> cluster_squared_error_sum_{};
   std::array<size_t, 6> cluster_sample_count_{};
   geometry_msgs::msg::PoseStamped latched_target_;
+  geometry_msgs::msg::PoseStamped end_effector_pose_;
+  bool have_end_effector_pose_ = false;
 
   rclcpp::Client<ros_gz_interfaces::srv::SpawnEntity>::SharedPtr spawn_client_;
   rclcpp::Client<ros_gz_interfaces::srv::DeleteEntity>::SharedPtr delete_client_;
@@ -991,6 +1013,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr start_cluster_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr harvest_complete_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr end_effector_pose_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_image_sub_;
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_sub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pub_;

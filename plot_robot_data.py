@@ -15,175 +15,200 @@ except ImportError:
     print("    Please execute: source /opt/ros/<distro>/setup.bash")
     sys.exit(1)
 
-def extract_rosbag_data(bag_path, target_joint="shoulder_joint"):
+def extract_multi_target_data(bag_path, target_joint):
     """
-    Opens a ROS 2 bag file (.mcap or .db3) using the native rosbag2_py storage api,
-    deserializes the /joint_states topic streams, and isolates target joint indices.
+    Parses changing commands and actual joint states from the MCAP/db3 bag file,
+    tracking multiple consecutive target goals mapped onto Simulation Time.
     """
-    if not bag_path or not os.path.exists(bag_path):
-        print(f"[!] Error: Provided path does not exist: {bag_path}")
-        sys.exit(1)
+    # FIX 1: Automatically expand '~' shortcuts if passed as raw strings
+    bag_path = os.path.expanduser(bag_path)
 
-    print(f"[*] Instantiating ROS 2 Reader engine for: {bag_path}...")
+    # FIX 2: Dynamic extension checking whether it's a directory or a direct file path
+    if bag_path.endswith(".mcap") or bag_path.endswith(".db3"):
+        storage_id = "mcap" if bag_path.endswith(".mcap") else "sqlite3"
+    else:
+        # If a directory is provided, look for internal files to detect format
+        storage_id = "mcap"
+        for file in os.listdir(bag_path):
+            if file.endswith(".db3"):
+                storage_id = "sqlite3"
+                break
 
-    # Configure storage readers (Auto-detects MCAP vs SQLite3 based on extension)
-    storage_id = "mcap" if bag_path.endswith(".mcap") else "sqlite3"
-    
     reader = rosbag2_py.SequentialReader()
     storage_options = rosbag2_py.StorageOptions(uri=bag_path, storage_id=storage_id)
     converter_options = rosbag2_py.ConverterOptions(
-        input_serialization_format="cdr",
-        output_serialization_format="cdr"
+        input_serialization_format="cdr", output_serialization_format="cdr"
     )
     
     try:
         reader.open(storage_options, converter_options)
     except Exception as e:
-        print(f"[!] Failed to open bag file: {e}")
+        print(f"[!] Failed to open bag file path '{bag_path}': {e}")
         sys.exit(1)
 
-    # Compile the active topic/type schema registry inside the bag file
     topic_types = reader.get_all_topics_and_types()
     type_map = {topic.name: topic.type for topic in topic_types}
 
-    target_topic = "/joint_states"
-    if target_topic not in type_map:
-        print(f"[!] Error: {target_topic} topic not recorded in this bag sequence.")
-        sys.exit(1)
+    cmd_topic = "/arm_controller/joint_trajectory"
+    fb_topic = "/joint_states"
 
-    # Dynamically extract and load the exact underlying message definition class type
-    msg_type_str = type_map[target_topic]
-    try:
-        MsgClass = get_message(msg_type_str)
-    except Exception as e:
-        print(f"[!] Failed to dynamically build message interface {msg_type_str}: {e}")
-        sys.exit(1)
+    for topic in [cmd_topic, fb_topic]:
+        if topic not in type_map:
+            print(f"[!] Error: Target topic '{topic}' not found in this bag.")
+            sys.exit(1)
 
-    timestamps = []
-    positions = []
+    Cmd_Class = get_message(type_map[cmd_topic])
+    Fb_Class = get_message(type_map[fb_topic])
 
-    # Sequence iteration loop across binary storage tracks
+    # Dynamic target state trackers
+    raw_cmd_t, raw_cmd_p = [], []
+    raw_fb_t, raw_fb_p = [], []
+
     while reader.has_next():
         topic, data, ts = reader.read_next()
-        if topic == target_topic:
-            # Decode the binary CDR serialized blob safely into standard object properties
-            msg = deserialize_message(data, MsgClass)
-            
-            if target_joint in msg.name:
-                joint_idx = msg.name.index(target_joint)
-                # Convert raw nanosecond integer timestamp records to clean standard float seconds
-                timestamps.append(ts / 1e9)
-                positions.append(msg.position[joint_idx])
+        
+        # Track 1: Captured Trajectory Commands (Changing Targets)
+        if topic == cmd_topic:
+            msg = deserialize_message(data, Cmd_Class)
+            if target_joint in msg.joint_names:
+                j_idx = msg.joint_names.index(target_joint)
+                
+                # Extract simulation stamp from the message header if available
+                if hasattr(msg, 'header') and msg.header.stamp.sec != 0:
+                    base_sim_time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1e9)
+                else:
+                    base_sim_time = ts / 1e9 # Fallback to recording time
+                
+                for pt in msg.points:
+                    t_offset = pt.time_from_start.sec + (pt.time_from_start.nanosec / 1e9)
+                    raw_cmd_t.append(base_sim_time + t_offset)
+                    raw_cmd_p.append(pt.positions[j_idx])
 
-    if not positions:
-        print(f"[!] Error: Target joint '{target_joint}' found no telemetry frames in {target_topic}.")
+        # Track 2: Measured Feedback (Simulation State Timeline)
+        elif topic == fb_topic:
+            msg = deserialize_message(data, Fb_Class)
+            if target_joint in msg.name:
+                j_idx = msg.name.index(target_joint)
+                if hasattr(msg, 'header') and msg.header.stamp.sec != 0:
+                    sim_time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1e9)
+                else:
+                    sim_time = ts / 1e9
+                raw_fb_t.append(sim_time)
+                raw_fb_p.append(msg.position[j_idx])
+
+    if not raw_cmd_p or not raw_fb_p:
+        print(f"[!] Error: Missing data vectors for axis '{target_joint}'.")
         sys.exit(1)
 
-    # Normalize timeline data vectors to align smoothly from a 0.0 baseline origin
-    t = np.array(timestamps)
-    t = t - t[0]
-    pos_meas = np.array(positions)
+    # Convert to arrays and sort by simulation timeline
+    cmd_t, cmd_p = np.array(raw_cmd_t), np.array(raw_cmd_p)
+    fb_t, fb_p = np.array(raw_fb_t), np.array(raw_fb_p)
 
-    # Extract/Derive Ideal Structural Target Command
-    target_pos = pos_meas[-1]
-    pos_cmd = np.full_like(t, target_pos)
-    movement_start_idx = np.argmax(np.abs(np.gradient(pos_meas)) > 0.001)
-    pos_cmd[:movement_start_idx] = pos_meas[0]
+    idx_c = np.argsort(cmd_t)
+    cmd_t, cmd_p = cmd_t[idx_c], cmd_p[idx_c]
     
-    for i in range(movement_start_idx, len(t)):
-        if t[i] - t[movement_start_idx] < 2.68:
-            progress = (t[i] - t[movement_start_idx]) / 2.68
-            pos_cmd[i] = pos_meas[0] + (target_pos - pos_meas[0]) * (3*progress**2 - 2*progress**3)
+    idx_f = np.argsort(fb_t)
+    fb_t, fb_p = fb_t[idx_f], fb_p[idx_f]
 
-    # Numerical differentiation handling across non-uniform simulation array step changes
-    dt = np.diff(t, prepend=t[0]-0.01)
-    dt[dt <= 0] = 0.01
+    # Shift timeline origin relative to the start of the simulation data
+    t_start = fb_t[0]
+    cmd_t -= t_start
+    fb_t -= t_start
 
-    vel_cmd = np.gradient(pos_cmd, dt)
+    # Align commanding profile onto the high-rate Gazebo physics simulation clock
+    # Uses nearest-neighbor/previous hold interpolation to simulate step target updates
+    cmd_p_aligned = np.interp(fb_t, cmd_t, cmd_p)
+
+    # Derive Ideal Commanded Motion Kinematics over Sim Time
+    dt = np.diff(fb_t, prepend=-0.005)
+    dt[dt <= 0] = 0.005
+
+    vel_cmd = np.gradient(cmd_p_aligned, dt)
     acc_cmd = np.gradient(vel_cmd, dt)
     jerk_cmd = np.gradient(acc_cmd, dt)
 
-    return t, pos_cmd, vel_cmd, acc_cmd, jerk_cmd, pos_meas
+    return fb_t, cmd_p_aligned, vel_cmd, acc_cmd, jerk_cmd, fb_p
+
+def generate_joint_plots(bag_path, target_joint):
+    print(f"[*] Extracting sim-time profile for joint: {target_joint}...")
+    t, p_cmd, v_cmd, a_cmd, j_cmd, p_meas = extract_multi_target_data(bag_path, target_joint)
+    
+    error = p_cmd - p_meas
+
+    # GRAPH 1: DYNAMIC S-CURVE COMMAND TRAJECTORIES
+    fig1, axs = plt.subplots(4, 1, figsize=(11, 8), sharex=True)
+    fig1.suptitle(f"Multi-Target Kinematic Profile Commands: {target_joint}", fontsize=13, fontweight='bold')
+
+    axs[0].plot(t, p_cmd, 'b-', linewidth=2.0, label="Command Position s(t)")
+    axs[0].set_ylabel("Pos [rad or m]", fontsize=9, fontweight='bold')
+    axs[0].grid(True, linestyle='--', alpha=0.5)
+    axs[0].legend(loc="upper right")
+
+    axs[1].plot(t, v_cmd, 'g-', linewidth=1.8, label="Derived Velocity v(t)")
+    axs[1].set_ylabel("Vel [rad/s]", fontsize=9, fontweight='bold')
+    axs[1].grid(True, linestyle='--', alpha=0.5)
+    axs[1].legend(loc="upper right")
+
+    axs[2].plot(t, a_cmd, 'r-', linewidth=1.5, label="Derived Acc a(t)")
+    axs[2].set_ylabel("Acc [rad/s²]", fontsize=9, fontweight='bold')
+    axs[2].grid(True, linestyle='--', alpha=0.5)
+    axs[2].legend(loc="upper right")
+
+    axs[3].plot(t, np.clip(j_cmd, -15, 15), 'm-', linewidth=1.2, label="Derived Jerk j(t)")
+    axs[3].set_ylabel("Jerk [rad/s³]", fontsize=9, fontweight='bold')
+    axs[3].set_xlabel("Simulation Time [seconds]", fontsize=10, fontweight='bold')
+    axs[3].grid(True, linestyle='--', alpha=0.5)
+    axs[3].legend(loc="upper right")
+
+    plt.tight_layout()
+    plot1_out = f"{target_joint}_trajectory_profile.png"
+    plt.savefig(f"~/ros2_ws/src/harvest_ros2/{plot1_out}", dpi=300)
+    plt.close()
+
+    # GRAPH 2: CLOSED-LOOP PERFORMANCE & COUPLING ERROR OVER TIME
+    fig2, (ax_main, ax_err) = plt.subplots(2, 1, figsize=(11, 6.5), sharex=True, gridspec_kw={'height_ratios': [2, 1]})
+    fig2.suptitle(f"Dynamic Closed-Loop PID Performance: {target_joint}", fontsize=13, fontweight='bold')
+
+    ax_main.plot(t, p_cmd, 'b-', linewidth=2.0, label="Dynamic Command Reference")
+    ax_main.plot(t, p_meas, 'r--', linewidth=1.5, label="Gazebo Physics Telemetry")
+    ax_main.set_ylabel("Joint Position", fontsize=10, fontweight='bold')
+    ax_main.grid(True, linestyle='--', alpha=0.5)
+    ax_main.legend(loc="best")
+
+    ax_err.plot(t, error, 'k-', linewidth=1.5, label="Dynamic Tracking Error (e)")
+    ax_err.axhline(0, color='red', linestyle=':', alpha=0.6)
+    ax_err.set_ylabel("Error Delta", fontsize=10, fontweight='bold')
+    ax_err.set_xlabel("Simulation Time [seconds]", fontsize=10, fontweight='bold')
+    ax_err.grid(True, linestyle='--', alpha=0.5)
+    ax_err.legend(loc="upper right")
+
+    plt.tight_layout()
+    plot2_out = f"{target_joint}_pid_performance.png"
+    plt.savefig(f"~/ros2_ws/src/harvest_ros2/{plot2_out}", dpi=300)
+    plt.close()
+    
+    print(f"[+] Saved analysis files for {target_joint}: \n    -> {plot1_out}\n    -> {plot2_out}")
 
 def main():
     if len(sys.argv) < 2:
-        print("[!] Error: Please provide the path to your rosbag SQLite3 database file (.db3)")
-        print("    Usage: python3 plot_gazebo_data.py /path/to/rosbag_dir/rosbag_dir_0.db3 [joint_name]")
+        print("[!] Usage: python3 dynamic_plotter.py /path/to/bag.mcap [optional_single_joint]")
         sys.exit(1)
 
-    # FIX: Explicitly target index 1 for the database path string
-    db_path = sys.argv[1] 
-    target_joint = sys.argv[2] if len(sys.argv) > 2 else "shoulder_joint"
-
-    # Extract actual live telemetry
-    t, p_cmd, v_cmd, a_cmd, j_cmd, p_meas = extract_rosbag_data(db_path, target_joint)
-
-    db_path = sys.argv[1]
-    target_joint = sys.argv[2] if len(sys.argv) > 2 else "shoulder_joint"
-
-    # Extract actual live telemetry
-    t, p_cmd, v_cmd, a_cmd, j_cmd, p_meas = extract_rosbag_data(db_path, target_joint)
+    bag_path = sys.argv[1]
     
-    # Calculate true tracking error profile
-    error = p_cmd - p_meas
-
-    # GRAPH 1: 7-PHASE TRAJECTORY GENERATION BLOCK DIAGRAM
-
-    fig1, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
-    fig1.suptitle("7-Phase Jerk-Limited S-Curve Kinematic Profile (Ideal Commands)", fontsize=14, fontweight='bold')
-
-    axs[0].plot(t, p_cmd, 'b-', linewidth=2.5, label="Position s(t)")
-    axs[0].set_ylabel("Position [rad]", fontsize=10, fontweight='bold')
-    axs[0].grid(True, linestyle='--', alpha=0.6)
-    axs[0].legend(loc="upper left")
-
-    axs[1].plot(t, v_cmd, 'g-', linewidth=2.5, label="Velocity v(t)")
-    axs[1].set_ylabel("Velocity [rad/s]", fontsize=10, fontweight='bold')
-    axs[1].grid(True, linestyle='--', alpha=0.6)
-    axs[1].legend(loc="upper left")
-
-    axs[2].plot(t, a_cmd, 'r-', linewidth=2.5, label="Acceleration a(t)")
-    axs[2].set_ylabel("Acc [rad/s²]", fontsize=10, fontweight='bold')
-    axs[2].grid(True, linestyle='--', alpha=0.6)
-    axs[2].legend(loc="upper left")
-
-    j_cmd_clamped = np.clip(j_cmd, -8.0, 8.0)
-    axs[3].plot(t, j_cmd_clamped, 'm-', linewidth=2.5, label="Jerk j(t)")
-    axs[3].set_ylabel("Jerk [rad/s³]", fontsize=10, fontweight='bold')
-    axs[3].set_xlabel("Time [seconds]", fontsize=11, fontweight='bold')
-    axs[3].grid(True, linestyle='--', alpha=0.6)
-    axs[3].legend(loc="upper left")
-
-    plt.tight_layout()
-    plot1_path = "trajectory_kinematic_profile.png"
-    plt.savefig(plot1_path, dpi=300)
-    print(f"[+] Saved Layout 1: {plot1_path}")
-
-    # GRAPH 2: CLOSED-LOOP PID TRACKING & PHYSICAL GAZEBO RESPONSE
-
-    fig2, (ax_main, ax_err) = plt.subplots(2, 1, figsize=(10, 7), sharex=True, gridspec_kw={'height_ratios': [2, 1]})
-    fig2.suptitle("Closed-Loop PID Performance & Gazebo Physics Response", fontsize=14, fontweight='bold')
-
-    ax_main.plot(t, p_cmd, 'b-', linewidth=2.5, label="Commanded Profile (S-Curve)")
-    ax_main.plot(t, p_meas, 'r--', linewidth=2.0, label="Measured Position (Gazebo Sim)")
-    ax_main.set_ylabel("Joint Position [rad]", fontsize=11, fontweight='bold')
-    ax_main.grid(True, linestyle='--', alpha=0.6)
-    ax_main.legend(loc="lower right", fontsize=10)
-    ax_main.set_title(f"Axis [{target_joint}] Response Under Physical Constraints", fontsize=11, fontstyle='italic')
-
-    ax_err.plot(t, error, 'k-', linewidth=1.8, label="Tracking Error (e_t)")
-    ax_err.axhline(0, color='red', linestyle=':', alpha=0.5)
-    ax_err.set_ylabel("Error [rad]", fontsize=11, fontweight='bold')
-    ax_err.set_xlabel("Time [seconds]", fontsize=11, fontweight='bold')
-    ax_err.grid(True, linestyle='--', alpha=0.6)
-    ax_err.legend(loc="upper right", fontsize=10)
-
-    plt.tight_layout()
-    plot2_path = "pid_tracking_performance.png"
-    plt.savefig(plot2_path, dpi=300)
-    print(f"[+] Saved Layout 2: {plot2_path}")
+    # All active arm joints present in the crop clearing simulation
+    all_joints = ["rail_joint", "base_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint", "wrist_roll_joint"]
     
-    plt.show()
+    if len(sys.argv) > 2:
+        target_joints = [sys.argv[2]]
+    else:
+        target_joints = all_joints
+
+    for joint in target_joints:
+        try:
+            generate_joint_plots(bag_path, joint)
+        except Exception as e:
+            print(f"[!] Skipped or failed processing for joint {joint}: {e}")
 
 if __name__ == "__main__":
     main()
