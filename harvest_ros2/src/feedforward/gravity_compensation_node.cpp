@@ -25,23 +25,23 @@ public:
 
         // Base
         this->declare_parameter<double>("base.kp", 30.0);
-        this->declare_parameter<double>("base.ki", 0.1);
-        this->declare_parameter<double>("base.kd", 4.5);
-        this->declare_parameter<double>("base.i_clamp", 0.2);
+        this->declare_parameter<double>("base.ki", 0.0);
+        this->declare_parameter<double>("base.kd", 3.0);
+        this->declare_parameter<double>("base.i_clamp", 0.0);
         this->declare_parameter<double>("base.limit", 4.0);
 
         // Shoulder
         this->declare_parameter<double>("shoulder.kp", 45.0);
-        this->declare_parameter<double>("shoulder.ki", 0.0);
+        this->declare_parameter<double>("shoulder.ki", 0.05);
         this->declare_parameter<double>("shoulder.kd", 4.0);
-        this->declare_parameter<double>("shoulder.i_clamp", 0.0);
+        this->declare_parameter<double>("shoulder.i_clamp", 0.1);
         this->declare_parameter<double>("shoulder.limit", 8.5);
         this->declare_parameter<double>("shoulder.max_gravity", 4.0);
 
         // Elbow
-        this->declare_parameter<double>("elbow.kp", 25.0);
+        this->declare_parameter<double>("elbow.kp", 35.0);
         this->declare_parameter<double>("elbow.ki", 0.0);
-        this->declare_parameter<double>("elbow.kd", 2.0);
+        this->declare_parameter<double>("elbow.kd", 3.0);
         this->declare_parameter<double>("elbow.i_clamp", 0.0);
         this->declare_parameter<double>("elbow.limit", 8.5);
         this->declare_parameter<double>("elbow.max_gravity", 4.0);
