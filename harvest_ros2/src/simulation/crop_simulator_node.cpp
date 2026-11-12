@@ -938,7 +938,7 @@ private:
   void log_target_metrics()
   {
     RCLCPP_INFO(
-      get_logger(), "Tracking errors for target %zu (peak / RMS; prismatic m, revolute rad):",
+      get_logger(), "Tracking errors for target %zu (peak / RMS; prismatic m, revolute rad):", // root mean square - magnitude of a set of varying numbers
       current_target_index_ + 1);
     for (size_t axis = 0; axis < kJointNames.size(); ++axis) {
       const double rms = target_sample_count_[axis] == 0 ? 0.0 :
