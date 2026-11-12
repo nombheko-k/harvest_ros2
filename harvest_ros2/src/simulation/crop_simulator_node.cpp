@@ -32,10 +32,20 @@ constexpr std::array<const char *, 6> kJointNames = {
   "rail_joint", "base_joint", "shoulder_joint", "elbow_joint",
   "wrist_pitch_joint", "wrist_roll_joint"};
 constexpr double kCropRadius = 0.012;
-constexpr double kClusterCenterY = 0.30;
-constexpr double kClusterCenterZ = 0.385;
+
+// Position the hanging greenhouse cluster higher up (0.48 m) and slightly closer in Y (0.26 m)
+// so the arm can comfortably reach beneath every fruit in an elbow-down posture.
+constexpr double kClusterCenterY = 0.26;
+constexpr double kClusterCenterZ = 0.48;
 constexpr double kGridSpacing = 0.035;
 constexpr double kGridJitter = 0.002;
+
+// Longer stem dimensions (32 mm length, anchored 26 mm above fruit center) so the suspended
+// greenhouse cluster hangs naturally and leaves clear bottom access for the gripper fingers.
+constexpr double kStemRadius = 0.002;
+constexpr double kStemLength = 0.032;
+constexpr double kStemOffsetZ = 0.026;
+
 constexpr size_t kImageSampleStep = 2;
 constexpr size_t kMinimumRedComponentPixels = 4;
 }  // namespace
@@ -87,6 +97,10 @@ public:
     end_effector_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       "/calculated_end_effector_pose", 10,
       std::bind(&CropSimulatorNode::handle_end_effector_pose, this, std::placeholders::_1));
+    // The target is the berry center, so compare it with the measured finger-midpoint grasp pose.
+    grasp_point_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/calculated_grasp_point_pose", 10,
+      std::bind(&CropSimulatorNode::handle_grasp_point_pose, this, std::placeholders::_1));
     camera_image_sub_ = create_subscription<sensor_msgs::msg::Image>(
       "/camera/image_raw", rclcpp::SensorDataQoS(),
       std::bind(&CropSimulatorNode::handle_camera_image, this, std::placeholders::_1));
@@ -112,7 +126,7 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "Crop simulator ready. A random 5-7 crop cluster will be harvested automatically; "
+      "Crop simulator ready. An elevated 5-7 crop greenhouse cluster will be harvested from below; "
       "the camera stream on /camera/image_raw gates each harvest. Publish std_msgs/msg/Empty "
       "to /crop_simulator/start_cluster to start another. Evaluation metrics: '%s'.",
       metrics_file_path_.c_str());
@@ -145,7 +159,8 @@ private:
       "wall_elapsed_s,sim_time_s,event,cluster_id,target_index,target_name,status,"
       "target_source,detection_status,detection_wait_s,clear_result,target_elapsed_s,"
       "target_x_m,target_y_m,target_z_m,crops_cleared,crops_total,"
-      "end_effector_x_m,end_effector_y_m,end_effector_z_m"
+      "end_effector_x_m,end_effector_y_m,end_effector_z_m,"
+      "grasp_point_x_m,grasp_point_y_m,grasp_point_z_m,target_grasp_error_m,"
       "cluster_clearing_time_sim_s,cluster_clearing_time_wall_s,"
       "rail_velocity_m_s,base_velocity_rad_s,shoulder_velocity_rad_s,elbow_velocity_rad_s,"
       "wrist_pitch_velocity_rad_s,wrist_roll_velocity_rad_s,"
@@ -227,6 +242,34 @@ private:
     }
     metrics_file_ << ',' << cleared_count_ << ','
                   << (cluster_targets_.empty() ? 0 : cluster_targets_.size()) << ',';
+
+    // Keep tool origin and finger midpoint distinct; the IK target is the berry/grasp point.
+    // Keep unavailable FK measurements empty rather than reporting a false zero position.
+    if (have_end_effector_pose_) {
+      metrics_file_ << end_effector_pose_.pose.position.x << ','
+                    << end_effector_pose_.pose.position.y << ','
+                    << end_effector_pose_.pose.position.z;
+    } else {
+      metrics_file_ << ",,";
+    }
+    metrics_file_ << ',';
+    // Empty FK fields mean feedback is unavailable; they must not shift later CSV columns.
+    if (have_grasp_point_pose_) {
+      metrics_file_ << grasp_point_pose_.pose.position.x << ','
+                    << grasp_point_pose_.pose.position.y << ','
+                    << grasp_point_pose_.pose.position.z;
+    } else {
+      metrics_file_ << ",,";
+    }
+    metrics_file_ << ',';
+    if (target != nullptr && have_grasp_point_pose_) {
+      const double dx = grasp_point_pose_.pose.position.x - target->pose.position.x;
+      const double dy = grasp_point_pose_.pose.position.y - target->pose.position.y;
+      const double dz = grasp_point_pose_.pose.position.z - target->pose.position.z;
+      metrics_file_ << std::sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    metrics_file_ << ',';
+
     if (cluster_started_) {
       metrics_file_ << (now() - cluster_start_time_).seconds() << ','
                     << std::chrono::duration<double>(
@@ -245,15 +288,6 @@ private:
       if (joint_acceleration_valid_[axis]) {
         metrics_file_ << joint_acceleration_[axis];
       }
-    }
-    // Keep unavailable FK measurements empty rather than reporting a false zero position.
-    metrics_file_ << ',';
-    if (have_end_effector_pose_) {
-      metrics_file_ << end_effector_pose_.pose.position.x << ','
-                    << end_effector_pose_.pose.position.y << ','
-                    << end_effector_pose_.pose.position.z;
-    } else {
-      metrics_file_ << ",,";
     }
     metrics_file_ << '\n';
     metrics_file_.flush();
@@ -310,23 +344,28 @@ private:
   std::string make_crop_sdf(const std::string & name) const
   {
     std::ostringstream sdf;
-    sdf << "<sdf version='1.7'>"
+    sdf << "<sdf version='1.6'>"
         << "<model name='" << name << "'>"
         << "<static>true</static>"
         << "<link name='link'>"
         << "<visual name='visual'><geometry><sphere><radius>"
         << kCropRadius
         << "</radius></sphere></geometry>"
-        << "<material><ambient>1.0 0.0 0.05 1.0</ambient>"
+        << "<material>"
+        << "<ambient>1.0 0.0 0.05 1.0</ambient>"
         << "<diffuse>1.0 0.0 0.05 1.0</diffuse>"
-        << "<emissive>0.25 0.0 0.01 1.0</emissive></material>"
-        << "</visual>"
-        // A short green stem above each fruit makes the suspended greenhouse cluster visible.
-        << "<visual name='stem'><pose>0 0 0.018 0 0 0</pose>"
-        << "<geometry><cylinder><radius>0.002</radius><length>0.016</length></cylinder></geometry>"
-        << "<material><ambient>0.08 0.35 0.05 1.0</ambient>"
-        << "<diffuse>0.08 0.35 0.05 1.0</diffuse></material></visual>"
-        // The target is the fruit center; a solid sphere here blocks the gripper from reaching it.
+        << "<specular>0.25 0.0 0.01 1.0</specular>"
+        << "</material></visual>"
+        // An elongated green stem above each fruit suspends the greenhouse berry cluster
+        // while keeping the underside unobstructed for a bottom-up grasp and twist.
+        << "<visual name='stem'><pose>0 0 " << kStemOffsetZ << " 0 0 0</pose>"
+        << "<geometry><cylinder><radius>" << kStemRadius << "</radius>"
+        << "<length>" << kStemLength << "</length></cylinder></geometry>"
+        << "<material>"
+        << "<ambient>0.08 0.35 0.05 1.0</ambient>"
+        << "<diffuse>0.08 0.35 0.05 1.0</diffuse>"
+        << "</material></visual>"
+        // The target is the fruit center; omitting collision prevents blocking the upward fingers.
         << "</link></model></sdf>";
     return sdf.str();
   }
@@ -361,7 +400,6 @@ private:
       write_metrics_row("single_crop_spawn_failed", "failed", "failed");
       return;
     }
-
     const std::string name = "strawberry_" + std::to_string(sphere_count_++);
     auto request = make_spawn_request(name, msg->pose);
     spawn_client_->async_send_request(
@@ -382,7 +420,7 @@ private:
 
   void latch_and_publish_target(const geometry_msgs::msg::PoseStamped & target)
   {
-    // The simulator knows the berry's world pose exactly; retain it when the camera loses sight.
+    // The simulator knows the berry's world pose; retain it if the camera loses sight during approach.
     latched_target_ = target;
     latched_target_.header.stamp = now();
     latched_target_.header.frame_id = "world";
@@ -420,7 +458,6 @@ private:
       write_metrics_row("cluster_start_failed", "failed", "failed");
       return;
     }
-
     cluster_setup_in_progress_ = true;
     cluster_started_ = false;
     cluster_status_ = "spawning_cluster";
@@ -438,11 +475,10 @@ private:
     cluster_peak_error_.fill(0.0);
     cluster_squared_error_sum_.fill(0.0);
     cluster_sample_count_.fill(0);
-    cleared_count_ = 0;
     write_metrics_row("cluster_started", "spawning_cluster", "pending");
     RCLCPP_INFO(
-      get_logger(), "Spawning a randomized vertical hanging cluster of %zu crops.",
-      cluster_targets_.size());
+      get_logger(), "Spawning an elevated greenhouse hanging cluster of %zu crops at Z=%.3f m.",
+      cluster_targets_.size(), kClusterCenterZ);
     spawn_next_cluster_crop();
   }
 
@@ -451,17 +487,22 @@ private:
     std::uniform_int_distribution<int> count_distribution(5, 7);
     std::uniform_real_distribution<double> jitter_distribution(-kGridJitter, kGridJitter);
     const int count = count_distribution(random_engine_);
-
     std::vector<std::array<int, 2>> grid;
-    // Distribute fruit across horizontal columns and vertical hanging levels,
-    // rather than laying the cluster flat on a ground plane.
+    // Distribute fruit across horizontal columns and vertical hanging levels at greenhouse height.
+    // Harvesting lower rows first prevents the upward-approaching gripper from bumping unpicked fruit.
     for (int row = -1; row <= 1; ++row) {
       for (int column = -1; column <= 1; ++column) {
         grid.push_back({column, row});
       }
     }
     std::shuffle(grid.begin(), grid.end(), random_engine_);
-
+    // Sort selected grid cells bottom-to-top (lowest row Z first) so the bottom-up gripper
+    // clears lower berries before reaching higher ones in the hanging cluster.
+    std::sort(
+      grid.begin(), grid.begin() + count,
+      [](const std::array<int, 2> & a, const std::array<int, 2> & b) {
+        return a[1] < b[1];
+      });
     std::vector<CropTarget> targets;
     targets.reserve(static_cast<size_t>(count));
     for (int index = 0; index < count; ++index) {
@@ -491,14 +532,12 @@ private:
       current_target_index_ = 0;
       cluster_status_ = "waiting_for_camera_detection";
       RCLCPP_INFO(
-        get_logger(), "Cluster ready; harvesting %zu crops sequentially.",
+        get_logger(), "Elevated cluster ready; harvesting %zu crops sequentially from below.",
         cluster_targets_.size());
-      current_target_index_ = 0;
       write_metrics_row("cluster_ready", "waiting_for_camera_detection", "pending");
       wait_for_camera_detection();
       return;
     }
-
     const auto & target = cluster_targets_[next_spawn_index_];
     auto request = make_spawn_request(target.name, target.pose);
     spawn_client_->async_send_request(
@@ -548,7 +587,6 @@ private:
       write_metrics_row("cluster_setup_cleanup_failed", "failed", "failed");
       return;
     }
-
     const std::string name = cluster_targets_[--cleanup_index_].name;
     auto request = std::make_shared<ros_gz_interfaces::srv::DeleteEntity::Request>();
     request->entity.name = name;
@@ -573,7 +611,6 @@ private:
     if (!cluster_active_ || current_target_index_ >= cluster_targets_.size()) {
       return;
     }
-
     reset_target_metrics();
     target_detected_ = detected_by_camera;
     target_source_ = detected_by_camera ? "camera" : "simulator_ground_truth";
@@ -586,7 +623,7 @@ private:
     target_msg.header.frame_id = "world";
     target_msg.pose = cluster_targets_[current_target_index_].pose;
     waiting_for_harvest_ = true;
-    // Camera visibility selects the crop; its known world pose is then latched for the full move.
+    // Camera visibility selects the initial crop; its world pose is latched for the bottom-up move.
     latch_and_publish_target(target_msg);
     write_metrics_row("target_commanded", "moving_to_target", "pending");
     RCLCPP_INFO(
@@ -612,20 +649,17 @@ private:
         image.encoding.c_str());
       return false;
     }
-
     if (image.width == 0 || image.height == 0 ||
-        image.step < static_cast<size_t>(image.width) * channels ||
-        image.data.size() < static_cast<size_t>(image.step) * image.height)
+      image.step < static_cast<size_t>(image.width) * channels ||
+      image.data.size() < static_cast<size_t>(image.step) * image.height)
     {
       RCLCPP_WARN_THROTTLE(
         get_logger(), *get_clock(), 5000, "Ignoring malformed camera image dimensions or data.");
       return false;
     }
-
     const size_t sampled_width = (image.width + kImageSampleStep - 1) / kImageSampleStep;
     const size_t sampled_height = (image.height + kImageSampleStep - 1) / kImageSampleStep;
     std::vector<uint8_t> red_mask(sampled_width * sampled_height, 0);
-
     // Sample every other pixel to keep image processing inexpensive at the sensor's 15 Hz rate.
     for (size_t sample_y = 0; sample_y < sampled_height; ++sample_y) {
       const size_t y = sample_y * kImageSampleStep;
@@ -635,14 +669,12 @@ private:
         const uint8_t red = image.data[offset + (red_first ? 0 : 2)];
         const uint8_t green = image.data[offset + 1];
         const uint8_t blue = image.data[offset + (red_first ? 2 : 0)];
-
         // The bright red berry material is separated from green/blue channels by this threshold.
         if (red >= 80 && red > green * 1.35 && red > blue * 1.25) {
           red_mask[sample_y * sampled_width + sample_x] = 1;
         }
       }
     }
-
     // Connected components reject isolated red noise while allowing distant berries to be small.
     std::vector<uint8_t> visited(red_mask.size(), 0);
     std::vector<size_t> pending;
@@ -650,7 +682,6 @@ private:
       if (red_mask[start] == 0 || visited[start] != 0) {
         continue;
       }
-
       pending.clear();
       pending.push_back(start);
       visited[start] = 1;
@@ -667,14 +698,13 @@ private:
           y + 1 < sampled_height ? pixel + sampled_width : red_mask.size()};
         for (const size_t neighbor : neighbors) {
           if (neighbor < red_mask.size() && red_mask[neighbor] != 0 &&
-              visited[neighbor] == 0)
+            visited[neighbor] == 0)
           {
             visited[neighbor] = 1;
             pending.push_back(neighbor);
           }
         }
       }
-
       if (component_size >= kMinimumRedComponentPixels) {
         return true;
       }
@@ -706,19 +736,23 @@ private:
     have_end_effector_pose_ = true;
   }
 
+  void handle_grasp_point_pose(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  {
+    grasp_point_pose_ = *msg;
+    have_grasp_point_pose_ = true;
+  }
+
   void handle_camera_image(const sensor_msgs::msg::Image::SharedPtr msg)
   {
     if (!cluster_active_ || !awaiting_camera_detection_ ||
-        waiting_for_harvest_ || delete_pending_)
+      waiting_for_harvest_ || delete_pending_)
     {
       return;
     }
-
     const rclcpp::Time image_stamp(msg->header.stamp, get_clock()->get_clock_type());
     if (image_stamp <= minimum_detection_stamp_ || !has_red_berry_component(*msg)) {
       return;
     }
-
     const auto & target = cluster_targets_[current_target_index_];
     std_msgs::msg::String detection;
     detection.data = target.name;
@@ -731,9 +765,8 @@ private:
     target_clear_result_ = "pending";
     write_metrics_row("berry_detected", "detected", "pending");
     RCLCPP_INFO(
-      get_logger(), "Camera detected a red berry in the cluster; selecting '%s'.",
+      get_logger(), "Camera detected a red berry in the elevated cluster; selecting '%s'.",
       target.name.c_str());
-
     // Gazebo provides exact coordinates for the simulated crop; visual detection gates selection.
     awaiting_camera_detection_ = false;
     publish_current_target(true);
@@ -752,7 +785,6 @@ private:
     waiting_for_harvest_ = false;
     write_metrics_row("harvest_cycle_complete", "deleting_crop", "pending");
     log_target_metrics();
-
     if (!delete_client_->service_is_ready()) {
       cluster_active_ = false;
       cluster_status_ = "failed";
@@ -763,7 +795,6 @@ private:
       write_metrics_row("crop_delete_service_unavailable", "failed", "failed");
       return;
     }
-
     const auto & target = cluster_targets_[current_target_index_];
     auto request = std::make_shared<ros_gz_interfaces::srv::DeleteEntity::Request>();
     request->entity.name = target.name;
@@ -783,7 +814,6 @@ private:
           RCLCPP_ERROR(get_logger(), "Gazebo failed to delete harvested crop '%s'.", name.c_str());
           return;
         }
-
         ++cleared_count_;
         target_clear_result_ = "success";
         write_metrics_row("crop_cleared", "crop_cleared", "success");
@@ -792,10 +822,10 @@ private:
           name.c_str(), cleared_count_, cluster_targets_.size());
         ++current_target_index_;
         if (current_target_index_ < cluster_targets_.size()) {
-          // The end-effector camera can be blocked at the first crop; use the known spawned
-          // positions for the rest of this simulated cluster rather than stalling on visibility.
+          // Keep the gripper in its bottom-up posture beneath the cluster and immediately
+          // advance to the next known crop without waiting on camera re-acquisition.
           RCLCPP_INFO(
-            get_logger(), "Selecting the next known crop from the simulated cluster.");
+            get_logger(), "Remaining in bottom-up posture; selecting next crop in the cluster.");
           publish_current_target();
         } else {
           finish_cluster();
@@ -846,17 +876,14 @@ private:
       last_joint_state_time_ = sample_time;
       have_joint_state_time_ = true;
     }
-
     if (!cluster_active_ || !trajectory_received_) {
       return;
     }
-
     const double elapsed = (now() - trajectory_start_time_).seconds();
     const auto & points = active_trajectory_.points;
     size_t lower_index = 0;
     size_t upper_index = 0;
     double interpolation = 0.0;
-
     if (elapsed >= rclcpp::Duration(points.back().time_from_start).seconds()) {
       lower_index = upper_index = points.size() - 1;
     } else if (elapsed > rclcpp::Duration(points.front().time_from_start).seconds()) {
@@ -873,7 +900,6 @@ private:
         }
       }
     }
-
     for (size_t axis = 0; axis < kJointNames.size(); ++axis) {
       const auto joint = std::find(
         active_trajectory_.joint_names.begin(), active_trajectory_.joint_names.end(),
@@ -886,11 +912,11 @@ private:
         static_cast<size_t>(std::distance(active_trajectory_.joint_names.begin(), joint));
       const size_t feedback_index = static_cast<size_t>(std::distance(msg->name.begin(), feedback));
       if (trajectory_index >= points[lower_index].positions.size() ||
-          trajectory_index >= points[upper_index].positions.size() ||
-          feedback_index >= msg->position.size()) {
+        trajectory_index >= points[upper_index].positions.size() ||
+        feedback_index >= msg->position.size())
+      {
         continue;
       }
-
       const double commanded = points[lower_index].positions[trajectory_index] +
         interpolation * (
         points[upper_index].positions[trajectory_index] -
@@ -917,7 +943,7 @@ private:
     for (size_t axis = 0; axis < kJointNames.size(); ++axis) {
       const double rms = target_sample_count_[axis] == 0 ? 0.0 :
         std::sqrt(target_squared_error_sum_[axis] /
-        static_cast<double>(target_sample_count_[axis]));
+          static_cast<double>(target_sample_count_[axis]));
       cluster_peak_error_[axis] = std::max(cluster_peak_error_[axis], target_peak_error_[axis]);
       cluster_squared_error_sum_[axis] += target_squared_error_sum_[axis];
       cluster_sample_count_[axis] += target_sample_count_[axis];
@@ -941,7 +967,7 @@ private:
     for (size_t axis = 0; axis < kJointNames.size(); ++axis) {
       const double rms = cluster_sample_count_[axis] == 0 ? 0.0 :
         std::sqrt(cluster_squared_error_sum_[axis] /
-        static_cast<double>(cluster_sample_count_[axis]));
+          static_cast<double>(cluster_sample_count_[axis]));
       RCLCPP_INFO(
         get_logger(), "  %s: %.6f / %.6f (samples: %zu)",
         kJointNames[axis], cluster_peak_error_[axis], rms, cluster_sample_count_[axis]);
@@ -1005,8 +1031,9 @@ private:
   std::array<size_t, 6> cluster_sample_count_{};
   geometry_msgs::msg::PoseStamped latched_target_;
   geometry_msgs::msg::PoseStamped end_effector_pose_;
+  geometry_msgs::msg::PoseStamped grasp_point_pose_;
   bool have_end_effector_pose_ = false;
-
+  bool have_grasp_point_pose_ = false;
   rclcpp::Client<ros_gz_interfaces::srv::SpawnEntity>::SharedPtr spawn_client_;
   rclcpp::Client<ros_gz_interfaces::srv::DeleteEntity>::SharedPtr delete_client_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr spawn_sub_;
@@ -1014,6 +1041,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr harvest_complete_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr end_effector_pose_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr grasp_point_pose_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_image_sub_;
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_sub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr target_pub_;
